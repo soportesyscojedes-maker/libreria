@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Librería Digital - Catálogo Premium</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+        }
+
+        /* Header con navegación */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo h1 {
+            font-size: 2.2em;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .search-bar {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 15px 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 50px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .cart-icon {
+            position: relative;
+            cursor: pointer;
+            font-size: 1.5em;
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .cart-icon:hover {
+            background: #e9ecef;
+            transform: scale(1.05);
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        /* Filtros */
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 50px;
+            background: white;
+            color: #2c3e50;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* Grid de libros */
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        /* Tarjeta de libro mejorada */
+        .book-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .book-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+        }
+
+        /* Etiqueta de género */
+        .genre-tag {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.9);
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #667eea;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .book-image-wrapper {
+            position: relative;
+            height: 350px;
+            overflow: hidden;
+        }
+
+        .book-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .book-card:hover .book-image {
+            transform: scale(1.1);
+        }
+
+        /* Sinopsis mejorada */
+        .synopsis {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.7), transparent);
+            color: white;
+            padding: 40px 20px 20px;
+            transform: translateY(100%);
+            transition: transform 0.4s ease;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .book-card:hover .synopsis {
+            transform: translateY(0);
+        }
+
+        .synopsis p {
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .rating {
+            color: #ffd700;
+            font-size: 1.1em;
+            letter-spacing: 2px;
+        }
+
+        .rating span {
+            color: white;
+            margin-left: 5px;
+            font-size: 0.9em;
+        }
+
+        .book-info {
+            padding: 25px;
+            background: white;
+        }
+
+        .book-title {
+            font-size: 1.3em;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .book-author {
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+            font-style: italic;
+        }
+
+        .price-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .book-price {
+            font-size: 1.6em;
+            color: #27ae60;
+            font-weight: 700;
+        }
+
+        .original-price {
+            font-size: 0.9em;
+            color: #95a5a6;
+            text-decoration: line-through;
+            margin-left: 5px;
+        }
+
+        .format-badge {
+            background: #f0f3f8;
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stock-status {
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .in-stock {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .limited-stock {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .buy-button, .download-button, .wishlist-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .buy-button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .download-button {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .wishlist-button {
+            background: #f8f9fa;
+            color: #2c3e50;
+            font-size: 1.2em;
+            padding: 12px;
+        }
+
+        .buy-button:hover, .download-button:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        .wishlist-button:hover {
+            background: #e9ecef;
+            transform: scale(1.05);
+        }
+
+        /* Modal mejorado */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: modalPop 0.4s ease;
+        }
+
+        @keyframes modalPop {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .modal-content h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .modal-content p {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 1.1em;
+            text-align: center;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .modal-content input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .confirm-button {
+            background: #27ae60;
+            color: white;
+        }
+
+        .confirm-button:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .cancel-button {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .cancel-button:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .result-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Carrito modal */
+        .cart-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1001;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-item img {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .cart-total {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 15px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .search-bar {
+                max-width: 100%;
+            }
+            
+            .filters {
+                justify-content: center;
+            }
+            
+            .modal-content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header mejorado -->
+        <div class="header">
+            <div class="logo">
+                <h1>📚 Libros Digitales Premium</h1>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar por título, autor o género..." onkeyup="filterBooks()">
+            </div>
+            <div class="cart-icon" onclick="openCart()">
+                🛒 Carrito
+                <span class="cart-count" id="cartCount">0</span>
+            </div>
+        </div>
+
+        <!-- Filtros por género -->
+        <div class="filters" id="filters">
+            <button class="filter-btn active" onclick="filterByGenre('all')">Todos</button>
+            <button class="filter-btn" onclick="filterByGenre('Novela')">Novela</button>
+            <button class="filter-btn" onclick="filterByGenre('Ciencia Ficción')">Ciencia Ficción</button>
+            <button class="filter-btn" onclick="filterByGenre('Fantasía')">Fantasía</button>
+            <button class="filter-btn" onclick="filterByGenre('Clásico')">Clásico</button>
+        </div>
+
+        <!-- Grid de libros -->
+        <div class="book-grid" id="bookGrid"></div>
+    </div>
+
+    <!-- Modal de descarga -->
+    <div class="modal" id="codeModal">
+        <div class="modal-content">
+            <div class="modal-icon">🔐</div>
+            <h2 id="modalTitle">Código de descarga</h2>
+            <p>Introduce el código para "<span id="selectedBookTitle"></span>"</p>
+            <input type="text" id="codeInput" placeholder="Ej: LIBRO2024" autocomplete="off">
+            <div class="modal-buttons">
+                <button class="modal-button confirm-button" onclick="validateCode()">Confirmar</button>
+                <button class="modal-button cancel-button" onclick="closeModal()">Cancelar</button>
+            </div>
+            <div id="modalResult" class="result-message"></div>
+        </div>
+    </div>
+
+    <!-- Modal del carrito -->
+    <div class="modal" id="cartModal">
+        <div class="modal-content">
+            <div class="modal-icon">🛒</div>
+            <h2>Tu Carrito</h2>
+            <div id="cartItems"></div>
+            <div class="cart-total" id="cartTotal"></div>
+            <button class="checkout-btn" onclick="checkout()">Proceder al pago</button>
+            <button class="modal-button cancel-button" onclick="closeCart()" style="margin-top: 10px;">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        // Base de datos ampliada con 15 libros
+        const books = [
+            {
+                id: 1,
+                title: "Cien años de soledad",
+                author: "Gabriel García Márquez",
+                price: 19.99,
+                originalPrice: 29.99,
+                format: "Digital + Físico",
+                genre: "Novela",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1327881361i/320.jpg",
+                synopsis: "La obra maestra del realismo mágico. La historia de la familia Buendía en Macondo es un viaje épico por el amor, la guerra y el destino.",
+                downloadCode: "GABO100",
+                rating: 4.8,
+                stock: 15,
+                year: 1967
+            },
+            {
+                id: 2,
+                title: "1984",
+                author: "George Orwell",
+                price: 16.99,
+                originalPrice: 24.99,
+                format: "Digital",
+                genre: "Ciencia Ficción",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1657781256i/61439040.jpg",
+                synopsis: "En un mundo totalitario donde el Gran Hermano te vigila, Winston Smith lucha por preservar su humanidad y encontrar la verdad.",
+                downloadCode: "ORWELL84",
+                rating: 4.9,
+                stock: 8,
+                year: 1949
+            },
+            {
+                id: 3,
+                title: "El Principito",
+                author: "Antoine de Saint-Exupéry",
+                price: 12.99,
+                originalPrice: 18.99,
+                format: "Digital + Físico",
+                genre: "Fantasía",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1367545443i/157993.jpg",
+                synopsis: "Un piloto perdido en el desierto conoce a un pequeño príncipe que le enseña las cosas esenciales de la vida: amar, ser responsable y ver con el corazón.",
+                downloadCode: "PRINCIPITO",
+                rating: 4.7,
+                stock: 25,
+                year: 1943
+            },
+            {
+                id: 4,
+                title: "Don Quijote de la Mancha",
+                author: "Miguel de Cervantes",
+                price: 24.99,
+                originalPrice: 34.99,
+                format: "Físico",
+                genre: "Clásico",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1546112331i/3836.jpg",
+                synopsis: "Las aventuras del ingenioso hidalgo que enloquece leyendo libros de caballería. Una sátira brillante y la obra cumbre de la literatura española.",
+                downloadCode: "QUIJOTE01",
+                rating: 4.9,
+                stock: 5,
+                year: 1605
+            },
+            {
+                id: 5,
+                title: "Crónica de una muerte anunciada",
+                author: "Gabriel García Márquez",
+                price: 14.99,
+                originalPrice: 21.99,
+                format: "Digital",
+                genre: "Novela",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1355045191i/23878.jpg",
+                synopsis: "Un pueblo entero sabe que van a matar a Santiago Nasar. Una historia fascinante sobre el honor, la fatalidad y la culpa colectiva.",
+                downloadCode: "CRONICA",
+                rating: 4.6,
+                stock: 12,
+                year: 1981
+            },
+            {
+                id: 6,
+                title: "Rayuela",
+                author: "Julio Cortázar",
+                price: 18.99,
+                originalPrice: 26.99,
+                format: "Digital + Físico",
+                genre: "Novela",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1348793881i/47629.jpg",
+                synopsis: "Una novela que se puede leer de múltiples formas. La historia de Horacio Oliveira y La Maga en París y Buenos Aires, un viaje existencial único.",
+                downloadCode: "RAYUELA",
+                rating: 4.5,
+                stock: 7,
+                year: 1963
+            },
+            {
+                id: 7,
+                title: "Fahrenheit 451",
+                author: "Ray Bradbury",
+                price: 15.99,
+                originalPrice: 22.99,
+                format: "Digital",
+                genre: "Ciencia Ficción",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1383718290i/13079982.jpg",
+                synopsis: "En un futuro donde los bomberos queman libros, un bombero empieza a cuestionar su sociedad. Una poderosa crítica a la censura y la falta de pensamiento crítico.",
+                downloadCode: "F451",
+                rating: 4.7,
+                stock: 10,
+                year: 1953
+            },
+            {
+                id: 8,
+                title: "El Hobbit",
+                author: "J.R.R. Tolkien",
+                price: 21.99,
+                originalPrice: 29.99,
+                format: "Digital + Físico",
+                genre: "Fantasía",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1546071216i/5907.jpg",
+                synopsis: "Bilbo Bolsón, un hobbit tranquilo, se ve envuelto en una aventura épica para recuperar un tesoro custodiado por el dragón Smaug.",
+                downloadCode: "HOBBIT",
+                rating: 4.8,
+                stock: 20,
+                year: 1937
+            },
+            {
+                id: 9,
+                title: "Orgullo y Prejuicio",
+                author: "Jane Austen",
+                price: 13.99,
+                originalPrice: 19.99,
+                format: "Digital",
+                genre: "Novela",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1320399351i/1885.jpg",
+                synopsis: "La historia de Elizabeth Bennet y su complicada relación con el señor Darcy. Una aguda observación de la sociedad y las relaciones humanas.",
+                downloadCode: "AUSTEN",
+                rating: 4.6,
+                stock: 18,
+                year: 1813
+            },
+            {
+                id: 10,
+                title: "Dune",
+                author: "Frank Herbert",
+                price: 22.99,
+                originalPrice: 32.99,
+                format: "Digital + Físico",
+                genre: "Ciencia Ficción",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1555447414i/44767458.jpg",
+                synopsis: "En el desértico planeta Arrakis, Paul Atreides se ve envuelto en una lucha por el control de la especia más valiosa del universo.",
+                downloadCode: "DUNE2024",
+                rating: 4.9,
+                stock: 6,
+                year: 1965
+            },
+            {
+                id: 11,
+                title: "La sombra del viento",
+                author: "Carlos Ruiz Zafón",
+                price: 17.99,
+                originalPrice: 24.99,
+                format: "Digital",
+                genre: "Novela",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1345593543i/1232.jpg",
+                synopsis: "Un joven descubre un libro maldito en el Cementerio de los Libros Olvidados y se obsesiona con descubrir la verdad sobre su autor.",
+                downloadCode: "SOMBRA",
+                rating: 4.5,
+                stock: 14,
+                year: 2001
+            },
+            {
+                id: 12,
+                title: "Neuromante",
+                author: "William Gibson",
+                price: 16.99,
+                originalPrice: 23.99,
+                format: "Digital",
+                genre: "Ciencia Ficción",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1559105022i/6088007.jpg",
+                synopsis: "La novela que inventó el cyberpunk. Case, un hacker caído en desgracia, recibe una oportunidad para volver a la matriz.",
+                downloadCode: "CYBER",
+                rating: 4.4,
+                stock: 9,
+                year: 1984
+            },
+            {
+                id: 13,
+                title: "El nombre del viento",
+                author: "Patrick Rothfuss",
+                price: 19.99,
+                originalPrice: 27.99,
+                format: "Digital + Físico",
+                genre: "Fantasía",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1270352123i/186074.jpg",
+                synopsis: "Kvothe narra la historia de su vida, desde sus días como un niño en una troupe de actores hasta convertirse en la leyenda más famosa de su tiempo.",
+                downloadCode: "KVOTHE",
+                rating: 4.7,
+                stock: 11,
+                year: 2007
+            },
+            {
+                id: 14,
+                title: "Los miserables",
+                author: "Victor Hugo",
+                price: 26.99,
+                originalPrice: 36.99,
+                format: "Físico",
+                genre: "Clásico",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1411852091i/24280.jpg",
+                synopsis: "La épica historia de Jean Valjean, un exconvicto que busca redención en una Francia convulsa, llena de justicia, amor y revolución.",
+                downloadCode: "MISERABLES",
+                rating: 4.8,
+                stock: 4,
+                year: 1862
+            },
+            {
+                id: 15,
+                title: "El alquimista",
+                author: "Paulo Coelho",
+                price: 14.99,
+                originalPrice: 20.99,
+                format: "Digital",
+                genre: "Novela",
+                image: "https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1654371463i/18144590.jpg",
+                synopsis: "Santiago, un pastor andaluz, viaja a las pirámides de Egipto en busca de un tesoro, aprendiendo a escuchar su corazón y seguir sus sueños.",
+                downloadCode: "ALQUIMIA",
+                rating: 4.3,
+                stock: 22,
+                year: 1988
+            }
+        ];
+
+        // Variables globales
+        let cart = [];
+        let selectedBook = null;
+        let currentGenre = 'all';
+
+        // Renderizar libros
+        function renderBooks() {
+            const bookGrid = document.getElementById('bookGrid');
+            const filteredBooks = currentGenre === 'all' 
+                ? books 
+                : books.filter(book => book.genre === currentGenre);
+            
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const searchedBooks = filteredBooks.filter(book => 
+                book.title.toLowerCase().includes(searchTerm) ||
+                book.author.toLowerCase().includes(searchTerm) ||
+                book.genre.toLowerCase().includes(searchTerm)
+            );
+
+            bookGrid.innerHTML = searchedBooks.map(book => {
+                const stockClass = book.stock > 10 ? 'in-stock' : 'limited-stock';
+                const stockText = book.stock > 10 ? '✅ En stock' : '⚠️ Últimas unidades';
+                
+                return `
+                <div class="book-card">
+                    <span class="genre-tag">${book.genre}</span>
+                    <div class="book-image-wrapper">
+                        <img class="book-image" src="${book.image}" alt="${book.title}" onerror="this.src='https://via.placeholder.com/300x450?text=Portada'">
+                        <div class="synopsis">
+                            <p>${book.synopsis}</p>
+                            <div class="rating">
+                                ${'★'.repeat(Math.floor(book.rating))}${book.rating % 1 ? '½' : ''} <span>${book.rating}/5</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="book-info">
+                        <h2 class="book-title">${book.title}</h2>
+                        <p class="book-author">${book.author} (${book.year})</p>
+                        <div class="price-section">
+                            <span class="book-price">$${book.price.toFixed(2)}</span>
+                            <span class="original-price">$${book.originalPrice.toFixed(2)}</span>
+                            <span class="format-badge">${book.format}</span>
+                        </div>
+                        <div class="stock-status ${stockClass}">${stockText}</div>
+                        <div class="buttons">
+                            <button class="buy-button" onclick="addToCart(${book.id})">
+                                🛒 Comprar
+                            </button>
+                            <button class="download-button" onclick="openDownloadModal(${book.id})">
+                                ⬇️ Descargar
+                            </button>
+                            <button class="wishlist-button" onclick="addToWishlist(${book.id})">
+                                ♥
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // Funciones de filtro
+        function filterByGenre(genre) {
+            currentGenre = genre;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderBooks();
+        }
+
+        function filterBooks() {
+            renderBooks();
+        }
+
+        // Funciones del carrito
+        function addToCart(bookId) {
+            const book = books.find(b => b.id === bookId);
+            cart.push(book);
+            document.getElementById('cartCount').textContent = cart.length;
+            showNotification(`📚 "${book.title}" añadido al carrito`);
+        }
+
+        function openCart() {
+            const cartModal = document.getElementById('cartModal');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p style="text-align: center; color: #7f8c8d;">Tu carrito está vacío</p>';
+                cartTotal.innerHTML = '';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="cart-item">
+                        <img src="${item.image}" alt="${item.title}">
+                        <div style="flex: 1;">
+                            <strong>${item.title}</strong><br>
+                            <small>${item.author}</small>
+                        </div>
+                        <strong>$${item.price.toFixed(2)}</strong>
+                    </div>
+                `).join('');
+                
+                const total = cart.reduce((sum, item) => sum + item.price, 0);
+                cartTotal.innerHTML = `Total: <strong>$${total.toFixed(2)}</strong>`;
+            }
+            
+            cartModal.style.display = 'flex';
+        }
+
+        function closeCart() {
+            document.getElementById('cartModal').style.display = 'none';
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                alert('Tu carrito está vacío');
+                return;
+            }
+            alert('✅ ¡Gracias por tu compra! En un sitio real, aquí iría la pasarela de pago.');
+            cart = [];
+            document.getElementById('cartCount').textContent = '0';
+            closeCart();
+        }
+
+        // Funciones de descarga
+        function openDownloadModal(bookId) {
+            selectedBook = books.find(b => b.id === bookId);
+            document.getElementById('selectedBookTitle').textContent = selectedBook.title;
+            document.getElementById('codeInput').value = '';
+            document.getElementById('modalResult').innerHTML = '';
+            document.getElementById('codeModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('codeModal').style.display = 'none';
+            selectedBook = null;
+        }
+
+        function validateCode() {
+            const enteredCode = document.getElementById('codeInput').value.trim();
+            const resultDiv = document.getElementById('modalResult');
+            
+            if (!selectedBook) {
+                resultDiv.innerHTML = '<div class="error">Error: No hay libro seleccionado</div>';
+                return;
+            }
+
+            if (enteredCode === '') {
+                resultDiv.innerHTML = '<div class="error">❌ Por favor, introduce un código</div>';
+                return;
+            }
+
+            if (enteredCode.toUpperCase() === selectedBook.downloadCode.toUpperCase()) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ ¡Código válido!<br>
+                        <strong>Descargando "${selectedBook.title}"...</strong>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    showNotification(`📥 Descarga iniciada: "${selectedBook.title}"`);
+                    closeModal();
+                }, 1500);
+            } else {
+                resultDiv.innerHTML = '<div class="error">❌ Código incorrecto. Intenta nuevamente.</div>';
+            }
+        }
+
+        // Función para wishlist
+        function addToWishlist(bookId) {
+            const book = books.find(b => b.id === bookId);
+            showNotification(`❤️ "${book.title}" añadido a tu lista de deseos`);
+        }
+
+        // Notificación flotante
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #2c3e50;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 50px;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+                z-index: 2000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Cerrar modales al hacer clic fuera
+        window.onclick = function(event) {
+            const codeModal = document.getElementById('codeModal');
+            const cartModal = document.getElementById('cartModal');
+            
+            if (event.target === codeModal) {
+                closeModal();
+            }
+            if (event.target === cartModal) {
+                closeCart();
+            }
+        }
+
+        // Inicializar
+        renderBooks();
+    </script>
+
+    <style>
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</body>
+</html>
