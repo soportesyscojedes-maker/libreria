@@ -1679,7 +1679,40 @@
             alert('❌ Error al importar el archivo. Verifica que sea un JSON válido.');
         }
     }
- 
+ // ========================================================
+// INICIALIZACIÓN
+// ========================================================
+let primeraVez = true; // Bandera para controlar la primera carga
+
+async function initApp() {
+    try {
+        await abrirBaseDeDatos();
+        const libros = await obtenerTodosLosLibros();
+
+        // Verificar si es la PRIMERA VEZ que se abre la app
+        // (detectamos si la base de datos está vacía)
+        if (libros.length === 0) {
+            console.log('📚 Primera ejecución - Cargando catálogo completo...');
+            
+            // Cargar todos los libros del catálogo completo
+            for (const libro of librosCatalogoCompleto) {
+                await agregarLibro(libro);
+            }
+            
+            // Guardar en localStorage que ya se cargó el catálogo
+            localStorage.setItem('catalogo_inicializado', 'true');
+            
+            await cargarYRenderizar();
+            console.log('✅ Catálogo inicial cargado correctamente.');
+        } else {
+            // Ya hay libros en la base de datos, solo cargarlos sin preguntar
+            console.log(`📚 Cargando ${libros.length} libros existentes...`);
+            await cargarYRenderizar();
+        }
+    } catch (error) {
+        console.error('❌ Error al inicializar:', error);
+    }
+}
     // ========================================================
     // EVENTOS
     // ========================================================
