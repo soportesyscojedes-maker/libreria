@@ -1679,39 +1679,7 @@
             alert('❌ Error al importar el archivo. Verifica que sea un JSON válido.');
         }
     }
-
-    // ========================================================
-    // INICIALIZACIÓN
-    // ========================================================
-    async function initApp() {
-        try {
-            await abrirBaseDeDatos();
-            const libros = await obtenerTodosLosLibros();
-
-            // Siempre cargar todos los libros del catálogo completo
-            // (esto reemplazará los datos existentes)
-            if (libros.length > 0) {
-                // Si ya hay libros, preguntar si se quiere actualizar
-                if (confirm('¿Deseas actualizar el catálogo con la lista completa de libros? (Se reemplazarán los datos actuales)')) {
-                    await limpiarBaseDeDatos();
-                    for (const libro of librosCatalogoCompleto) {
-                        await agregarLibro(libro);
-                    }
-                    await cargarYRenderizar();
-                }
-            } else {
-                // Si está vacío, cargar todos
-                for (const libro of librosCatalogoCompleto) {
-                    await agregarLibro(libro);
-                }
-                await cargarYRenderizar();
-            }
-            console.log('✅ Aplicación inicializada correctamente.');
-        } catch (error) {
-            console.error('❌ Error al inicializar:', error);
-        }
-    }
-
+ 
     // ========================================================
     // EVENTOS
     // ========================================================
