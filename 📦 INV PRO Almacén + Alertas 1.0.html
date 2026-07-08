@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>InventarioPro+ | Gestión de Almacén con Alertas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+        }
+        .app-layout { display: flex; min-height: 100vh; }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #1e3c72 0%, #0f2a4a 100%);
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+            z-index: 20;
+        }
+        .sidebar-header { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); }
+        .sidebar-header h2 { font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            margin: 4px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: rgba(255,255,255,0.85);
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+        .nav-item.active { background: #2a9d8f; color: white; }
+        .nav-icon { font-size: 1.3rem; width: 28px; text-align: center; }
+        .sidebar-footer { margin-top: auto; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.7rem; text-align: center; }
+        
+        /* Main */
+        .main-content { flex: 1; overflow-x: auto; padding: 20px; }
+        .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .card h3 { margin-bottom: 16px; color: #1e3c72; border-left: 3px solid #2a9d8f; padding-left: 12px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+        
+        .table-container { overflow-x: auto; border-radius: 16px; border: 1px solid #e2e8f0; background: white; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        .data-table th, .data-table td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #eef2f6; }
+        .data-table th { background: #f8fafc; color: #1e3c72; font-weight: 600; position: sticky; top: 0; }
+        
+        .badge-stock-bajo { background: #fee2e2; color: #dc2626; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; }
+        .badge-normal { background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; }
+        .badge-vencimiento { background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; }
+        .badge-vencido { background: #fee2e2; color: #dc2626; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; }
+        .badge-obsoleto { background: #e5e7eb; color: #4b5563; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; }
+        .badge-demo { background: #e76f51; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
+        .badge-ubicacion { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-family: monospace; }
+        
+        button {
+            background: #1e3c72;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-excel { background: #1e6f3f; }
+        .btn-pdf { background: #dc3545; }
+        .btn-success { background: #2a9d8f; }
+        .btn-warning { background: #e67e22; }
+        .btn-danger { background: #c0392b; }
+        .btn-backup { background: #f39c12; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn-sm { padding: 4px 10px; font-size: 0.65rem; }
+        
+        input, select, textarea { padding: 10px 14px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 0.85rem; width: 100%; }
+        label { font-weight: 600; font-size: 0.75rem; display: block; margin-bottom: 5px; color: #1e2a36; }
+        
+        .precio-sugerido { background: linear-gradient(135deg, #e8f8f5, #d4efdf); border-radius: 16px; padding: 16px; text-align: center; }
+        .precio-sugerido .valor { font-size: 1.8rem; font-weight: 800; color: #1e3c72; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 24px; padding: 24px; max-width: 700px; width: 95%; max-height: 85vh; overflow-y: auto; }
+        .hidden { display: none; }
+        .selected-row { background: #e8f8f5 !important; border-left: 3px solid #2a9d8f; }
+        .row-alerta-vencimiento { background: #fef3c7 !important; }
+        .row-alerta-vencido { background: #fee2e2 !important; }
+        .row-alerta-obsoleto { background: #f3f4f6 !important; }
+        .watermark-demo {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #e76f51;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            z-index: 999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .alerta-banner {
+            background: #fef3c7;
+            border-left: 4px solid #d97706;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .alerta-banner.danger { background: #fee2e2; border-left-color: #dc2626; }
+        .alerta-banner.success { background: #dcfce7; border-left-color: #16a34a; }
+        
+        .ubicacion-codigo {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #1e3c72;
+            border: 1px dashed #cbd5e1;
+        }
+        
+        @media (max-width: 900px) {
+            .sidebar { width: 70px; }
+            .sidebar-header h2, .sidebar-header p, .nav-item span:not(.nav-icon) { display: none; }
+            .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
+        }
+        @media print { .sidebar, .btn-group, .no-print, .watermark-demo { display: none; } }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>📦 INV<span style="font-weight:300;">PRO</span></h2>
+            <p>Almacén + Alertas</p>
+        </div>
+        <div class="nav-item active" data-section="inventario">
+            <div class="nav-icon">📦</div>
+            <span>Inventario</span>
+        </div>
+        <div class="nav-item" data-section="alertas">
+            <div class="nav-icon">🔔</div>
+            <span>Alertas</span>
+        </div>
+        <div class="nav-item" data-section="kardex">
+            <div class="nav-icon">📊</div>
+            <span>Kardex</span>
+        </div>
+        <div class="nav-item" data-section="costos">
+            <div class="nav-icon">💰</div>
+            <span>Cost Plus</span>
+        </div>
+        <div class="nav-item" data-section="config">
+            <div class="nav-icon">⚙️</div>
+            <span>Config</span>
+        </div>
+        <div class="sidebar-footer">
+            <div>💾 Datos locales</div>
+            <div id="monedaFooter">USD</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- INVENTARIO -->
+        <div id="section-inventario" class="section-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <h3>📋 Productos</h3>
+                    <div class="btn-group">
+                        <button id="addProductBtn" class="btn-success">➕ Agregar</button>
+                        <button id="exportInventarioExcelBtn" class="btn-excel">📊 Excel</button>
+                        <button id="exportInventarioPDFBtn" class="btn-pdf">📄 PDF</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alertas rápidas -->
+            <div id="alertaBannerContainer"></div>
+            
+            <!-- Indicadores -->
+            <div class="grid-4">
+                <div class="card"><div style="font-size:1.8rem;">📦</div><div id="totalProductos" style="font-size:1.5rem; font-weight:700;">0</div><div>Total Productos</div></div>
+                <div class="card"><div style="font-size:1.8rem;">⚠️</div><div id="stockBajoCount" style="font-size:1.5rem; font-weight:700;">0</div><div>Stock Bajo</div></div>
+                <div class="card"><div style="font-size:1.8rem;">⏰</div><div id="vencimientoCount" style="font-size:1.5rem; font-weight:700;">0</div><div>Por Vencer (7 días)</div></div>
+                <div class="card"><div style="font-size:1.8rem;">🗑️</div><div id="obsoletoCount" style="font-size:1.5rem; font-weight:700;">0</div><div>Obsoletos (>90 días)</div></div>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table" id="productosTable">
+                    <thead>
+                        <tr>
+                            <th>Ubicación</th>
+                            <th>Serial/Lote</th>
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Mínimo</th>
+                            <th>Días en inv.</th>
+                            <th>Vence</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productosBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ALERTAS -->
+        <div id="section-alertas" class="section-content" style="display: none;">
+            <div class="card">
+                <h3>🔔 Centro de Alertas</h3>
+                <div id="alertasLista"></div>
+            </div>
+        </div>
+
+        <!-- KARDEX -->
+        <div id="section-kardex" class="section-content" style="display: none;">
+            <div class="card">
+                <h3>📦 Movimientos de Inventario</h3>
+                <div class="grid-2">
+                    <div>
+                        <label>Producto</label>
+                        <select id="kardexProductoSelect"></select>
+                    </div>
+                    <div>
+                        <label>Tipo de movimiento</label>
+                        <select id="movimientoTipo">
+                            <option value="entrada">➕ Entrada</option>
+                            <option value="salida">➖ Salida</option>
+                        </select>
+                    </div>
+                    <div><label>Cantidad</label><input type="number" id="movimientoCantidad" value="1"></div>
+                    <div><label>Precio Unitario (USD)</label><input type="number" id="movimientoPrecio" step="0.01" placeholder="Opcional"></div>
+                    <div><label>Documento</label><input type="text" id="movimientoDoc" placeholder="Factura #"></div>
+                    <div><label>Fecha</label><input type="date" id="movimientoFecha"></div>
+                </div>
+                <div class="btn-group" style="margin-top:12px;">
+                    <button id="registrarMovimientoBtn" class="btn-success">✅ Registrar Movimiento</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3>📜 Historial de Movimientos</h3>
+                <div class="table-container" style="max-height:400px; overflow-y:auto;">
+                    <table class="data-table" id="movimientosTable">
+                        <thead><tr><th>Fecha</th><th>Producto</th><th>Serial</th><th>Tipo</th><th>Cant.</th><th>Precio USD</th><th>Total</th><th>Documento</th></tr></thead>
+                        <tbody id="movimientosBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- COST PLUS -->
+        <div id="section-costos" class="section-content" style="display: none;">
+            <!-- ... misma sección de costos que antes ... -->
+            <div class="grid-2">
+                <div class="card">
+                    <h3>🏭 COSTES FIJOS (CFT)</h3>
+                    <table class="data-table">
+                        <thead><tr><th>Concepto</th><th>Monto (USD)</th><th></th></tr></thead>
+                        <tbody id="tbodyCFT">
+                            <tr><td><input type="text" class="cft-concepto" value="Alquiler"></td>
+                                <td><input type="number" class="cft-valor" value="500" step="10"></td>
+                                <td><button class="btn-eliminar-costo">🗑️</button></td>
+                            </tr>
+                            <tr><td><input type="text" class="cft-concepto" value="Sueldos"></td>
+                                <td><input type="number" class="cft-valor" value="400" step="10"></td>
+                                <td><button class="btn-eliminar-costo">🗑️</button></td>
+                            </tr>
+                            <tr><td><input type="text" class="cft-concepto" value="Servicios"></td>
+                                <td><input type="number" class="cft-valor" value="100" step="10"></td>
+                                <td><button class="btn-eliminar-costo">🗑️</button></td>
+                            </tr>
+                        </tbody>
+                        <tfoot><tr><td><button id="agregarCFT" class="btn-agregar">+ Agregar</button></td>
+                                <td><strong>Total CFT:</strong> <span id="totalCFT">1000.00</span></td><td></td></tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="card">
+                    <h3>📦 COSTES VARIABLES (CVT)</h3>
+                    <table class="data-table">
+                        <thead><tr><th>Concepto</th><th>Monto (USD)</th><th></th></tr></thead>
+                        <tbody id="tbodyCVT">
+                            <tr><td><input type="text" class="cvt-concepto" value="Compra productos"></td>
+                                <td><input type="number" class="cvt-valor" value="300" step="10"></td>
+                                <td><button class="btn-eliminar-costo">🗑️</button></td>
+                            </tr>
+                            <tr><td><input type="text" class="cvt-concepto" value="Empaque"></td>
+                                <td><input type="number" class="cvt-valor" value="100" step="10"></td>
+                                <td><button class="btn-eliminar-costo">🗑️</button></td>
+                            </tr>
+                        </tbody>
+                        <tfoot><tr><td><button id="agregarCVT" class="btn-agregar">+ Agregar</button></td>
+                                <td><strong>Total CVT:</strong> <span id="totalCVT">400.00</span></td><td></td></tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>⚙️ Parámetros de Cálculo</h3>
+                    <label>🎯 Producto a evaluar</label>
+                    <select id="productoCostSelect"><option value="">-- Seleccionar --</option></select>
+                    <label>📦 Cantidad (Q)</label>
+                    <input type="number" id="q" value="100" step="10">
+                    <label>📈 Margen (MU%)</label>
+                    <input type="number" id="mu" value="30" step="5">
+                    <div class="btn-group" style="margin-top:16px;">
+                        <button id="calcularCostosBtn" class="btn-success">🔍 Calcular</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>💰 Precio Sugerido</h3>
+                    <div class="precio-sugerido">
+                        <div style="font-size:0.7rem;">PRECIO DE VENTA SUGERIDO</div>
+                        <div class="valor" id="precioFinal">---</div>
+                        <div id="productoSugeridoInfo" style="font-size:0.7rem; margin-top:8px;"></div>
+                    </div>
+                    <div id="desgloseCostos" style="font-size:0.7rem; margin-top:12px;"></div>
+                    <div class="equilibrio-box" style="background:#fef9e6; border-radius:16px; padding:16px; margin-top:16px;">
+                        <strong>⚖️ PUNTO DE EQUILIBRIO</strong>
+                        <div id="equilibrioContenido"></div>
+                    </div>
+                    <canvas id="marginChart" height="150" style="margin-top:16px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONFIGURACIÓN -->
+        <div id="section-config" class="section-content" style="display: none;">
+            <div class="card">
+                <h3>🏢 Datos de la Empresa</h3>
+                <div class="grid-2">
+                    <div><label>Nombre</label><input type="text" id="empresaNombre" value="MI EMPRESA C.A."></div>
+                    <div><label>RIF</label><input type="text" id="empresaRif" value="J-12345678-9"></div>
+                    <div><label>Dirección</label><input type="text" id="empresaDireccion" value="Caracas, Venezuela"></div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>💱 Configuración Monetaria</h3>
+                <div class="grid-2">
+                    <div>
+                        <label>💲 Moneda de referencia</label>
+                        <select id="monedaBase">
+                            <option value="USD">USD - Dólar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="VES">VES - Bolívar</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>💰 Tasa BCV (VES por USD)</label>
+                        <input type="number" id="tasaBCV" value="36.50" step="0.01">
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>🔑 Licencia</h3>
+                <div class="grid-2">
+                    <div>
+                        <label>Serial de Licencia</label>
+                        <input type="text" id="licenciaSerial" placeholder="Ingrese su serial">
+                        <button id="activarLicenciaBtn" class="btn-success" style="margin-top:8px;">✅ Activar</button>
+                    </div>
+                    <div>
+                        <label>Estado</label>
+                        <div id="licenciaEstado" style="padding:10px; border-radius:12px; background:#f0f0f0; margin-top:8px;">
+                            <span id="licenciaStatusText">🔒 DEMO</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top:16px; padding:12px; background:#fef9e6; border-radius:12px;">
+                    <strong>📌 DEMO:</strong> 3 productos · 10 movimientos<br>
+                    <strong>💎 FULL:</strong> Ilimitado + Exportaciones<br>
+                    <strong>📧 Contacto:</strong> ventas@tusistema.com
+                </div>
+            </div>
+            <div class="card">
+                <h3>💾 Respaldos</h3>
+                <div class="btn-group">
+                    <button id="respaldarCompletoBtn" class="btn-backup">💿 Respaldar</button>
+                    <button id="restaurarCompletoBtn" class="btn-warning">📂 Restaurar</button>
+                    <button id="limpiarDatosBtn" class="btn-danger">🗑️ Limpiar</button>
+                </div>
+                <input type="file" id="restoreFileInput" accept=".json" style="display:none;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Producto (mejorado) -->
+<div id="productoModal" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="modalTitle">Agregar Producto</h3>
+        <div class="grid-2">
+            <div><label>Serial/Lote</label><input type="text" id="modalSerial" placeholder="Ej: SN-001"></div>
+            <div><label>Nombre</label><input type="text" id="modalNombre"></div>
+            <div><label>Categoría</label><input type="text" id="modalCategoria"></div>
+            <div><label>Precio USD</label><input type="number" id="modalPrecio" step="0.01"></div>
+            <div><label>Stock Inicial</label><input type="number" id="modalStock" value="0"></div>
+            <div><label>Stock Mínimo</label><input type="number" id="modalStockMin" value="5"></div>
+        </div>
+        <div style="margin-top:12px;">
+            <h4 style="font-size:0.8rem; color:#1e3c72;">📍 Ubicación Física</h4>
+            <div class="grid-2">
+                <div><label>Depósito</label><input type="text" id="modalDeposito" placeholder="Ej: A, B, Principal"></div>
+                <div><label>Estante</label><input type="text" id="modalEstante" placeholder="Ej: 01, 02, 03"></div>
+                <div><label>Nivel</label><input type="text" id="modalNivel" placeholder="Ej: 1, 2, 3"></div>
+                <div><label>Posición</label><input type="text" id="modalPosicion" placeholder="Ej: 01, 02, 03"></div>
+            </div>
+            <div style="background:#f0f4ff; padding:10px; border-radius:12px; margin-top:8px;">
+                <label>📍 Código de ubicación generado</label>
+                <div id="modalUbicacionGenerada" class="ubicacion-codigo" style="text-align:center; font-size:1.1rem;">---</div>
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <h4 style="font-size:0.8rem; color:#1e3c72;">⏰ Control de tiempo</h4>
+            <div class="grid-2">
+                <div><label>Fecha de ingreso</label><input type="date" id="modalFechaIngreso"></div>
+                <div><label>Fecha de vencimiento</label><input type="date" id="modalFechaVencimiento"></div>
+            </div>
+        </div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button id="guardarProductoBtn" class="btn-success">Guardar</button>
+            <button id="cancelarModalBtn" class="btn-danger">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="licenciaModal" class="modal hidden">
+    <div class="modal-content" style="text-align:center;">
+        <h2>💎 Versión FULL</h2>
+        <p style="margin:16px 0;">Desbloquea todas las funciones:</p>
+        <ul style="text-align:left; margin:16px 24px;">
+            <li>✅ Productos ilimitados</li>
+            <li>✅ Movimientos ilimitados</li>
+            <li>✅ Exportaciones Excel/PDF</li>
+            <li>✅ Respaldos completos</li>
+            <li>✅ Soporte prioritario</li>
+        </ul>
+        <div style="background:#f0f0f0; border-radius:16px; padding:16px; margin:16px 0;">
+            <strong style="font-size:1.5rem;">$29 USD</strong>
+            <span style="display:block; font-size:0.7rem;">único pago · licencia perpetua</span>
+        </div>
+        <button id="cerrarLicenciaModal" class="btn-success">Cerrar</button>
+        <p style="font-size:0.6rem; margin-top:12px;">📧 Contacto: ventas@tusistema.com</p>
+    </div>
+</div>
+
+<script>
+    // ==================== CONFIGURACIÓN DE LICENCIA ====================
+    let IS_FULL_VERSION = false;
+    const DEMO_MAX_PRODUCTOS = 3;
+    const DEMO_MAX_MOVIMIENTOS = 10;
+    
+    function validarSerial(serial) {
+        if (!serial || serial.length < 20) return false;
+        const VALID_SERIALS = [
+            "INV-FULL-2026-001-A1B2C3",
+            "INV-FULL-2026-002-D4E5F6",
+            "INV-FULL-2026-003-G7H8I9"
+        ];
+        if (VALID_SERIALS.includes(serial)) return { valid: true, tipo: "FULL" };
+        if (serial === "DEMO") return { valid: true, tipo: "DEMO" };
+        return { valid: false };
+    }
+    
+    function activarLicencia(serial) {
+        const resultado = validarSerial(serial);
+        if (resultado.valid) {
+            IS_FULL_VERSION = (resultado.tipo === "FULL");
+            localStorage.setItem('licencia_serial', serial);
+            localStorage.setItem('licencia_tipo', resultado.tipo);
+            document.getElementById('licenciaStatusText').innerHTML = IS_FULL_VERSION ? '✅ ACTIVA (FULL)' : '🔒 DEMO';
+            document.getElementById('licenciaStatusText').style.color = IS_FULL_VERSION ? '#16a34a' : '#e76f51';
+            return true;
+        }
+        alert("Serial inválido. Contacte a ventas@tusistema.com");
+        return false;
+    }
+    
+    function cargarLicenciaGuardada() {
+        const serial = localStorage.getItem('licencia_serial');
+        const tipo = localStorage.getItem('licencia_tipo');
+        if (serial && tipo) {
+            IS_FULL_VERSION = (tipo === "FULL");
+            document.getElementById('licenciaSerial').value = serial;
+            document.getElementById('licenciaStatusText').innerHTML = IS_FULL_VERSION ? '✅ ACTIVA (FULL)' : '🔒 DEMO';
+            document.getElementById('licenciaStatusText').style.color = IS_FULL_VERSION ? '#16a34a' : '#e76f51';
+        }
+    }
+    
+    function puedeAgregarProducto() {
+        if (IS_FULL_VERSION) return true;
+        if (productos.length >= DEMO_MAX_PRODUCTOS) {
+            alert(`🔒 DEMO · Máximo ${DEMO_MAX_PRODUCTOS} productos.`);
+            document.getElementById('licenciaModal').classList.remove('hidden');
+            return false;
+        }
+        return true;
+    }
+    
+    function puedeAgregarMovimiento() {
+        if (IS_FULL_VERSION) return true;
+        if (movimientos.length >= DEMO_MAX_MOVIMIENTOS) {
+            alert(`🔒 DEMO · Máximo ${DEMO_MAX_MOVIMIENTOS} movimientos.`);
+            document.getElementById('licenciaModal').classList.remove('hidden');
+            return false;
+        }
+        return true;
+    }
+    
+    function puedeExportar() {
+        if (!IS_FULL_VERSION) {
+            alert("🔒 DEMO · Exportaciones bloqueadas.");
+            document.getElementById('licenciaModal').classList.remove('hidden');
+            return false;
+        }
+        return true;
+    }
+    
+    // ==================== GLOBALES ====================
+    let productos = [];
+    let movimientos = [];
+    let db = null;
+    let selectedProductIdForCost = null;
+    let chartObj = null;
+    let editingProductId = null;
+    
+    const DB_NAME = "InventarioAlmacenDB";
+    const DB_VERSION = 4;
+    const STORE_PRODUCTOS = "productos";
+    const STORE_MOVIMIENTOS = "movimientos";
+    const STORE_CONFIG = "config";
+    
+    // ==================== INDEXEDDB ====================
+    function abrirDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onerror = () => reject(req.error);
+            req.onsuccess = () => { db = req.result; resolve(db); };
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_PRODUCTOS)) {
+                    db.createObjectStore(STORE_PRODUCTOS, { keyPath: "id", autoIncrement: true });
+                }
+                if (!db.objectStoreNames.contains(STORE_MOVIMIENTOS)) {
+                    db.createObjectStore(STORE_MOVIMIENTOS, { keyPath: "id", autoIncrement: true });
+                }
+                if (!db.objectStoreNames.contains(STORE_CONFIG)) {
+                    db.createObjectStore(STORE_CONFIG, { keyPath: "key" });
+                }
+            };
+        });
+    }
+    
+    async function cargarProductos() {
+        if (!db) return [];
+        return new Promise((res) => {
+            const tx = db.transaction(STORE_PRODUCTOS, "readonly");
+            const req = tx.objectStore(STORE_PRODUCTOS).getAll();
+            req.onsuccess = () => res(req.result || []);
+            req.onerror = () => res([]);
+        });
+    }
+    
+    async function guardarProducto(p) {
+        return new Promise((res) => {
+            const tx = db.transaction(STORE_PRODUCTOS, "readwrite");
+            const req = tx.objectStore(STORE_PRODUCTOS).put(p);
+            req.onsuccess = () => res();
+        });
+    }
+    
+    async function eliminarProducto(id) {
+        return new Promise((res) => {
+            const tx = db.transaction(STORE_PRODUCTOS, "readwrite");
+            const req = tx.objectStore(STORE_PRODUCTOS).delete(id);
+            req.onsuccess = () => res();
+        });
+    }
+    
+    async function cargarMovimientos() {
+        if (!db) return [];
+        return new Promise((res) => {
+            const tx = db.transaction(STORE_MOVIMIENTOS, "readonly");
+            const req = tx.objectStore(STORE_MOVIMIENTOS).getAll();
+            req.onsuccess = () => res(req.result || []);
+            req.onerror = () => res([]);
+        });
+    }
+    
+    async function guardarMovimiento(m) {
+        return new Promise((res) => {
+            const tx = db.transaction(STORE_MOVIMIENTOS, "readwrite");
+            const req = tx.objectStore(STORE_MOVIMIENTOS).add(m);
+            req.onsuccess = () => res();
+        });
+    }
+    
+    async function eliminarTodosMovimientos() {
+        return new Promise((res) => {
+            const tx = db.transaction(STORE_MOVIMIENTOS, "readwrite");
+            const req = tx.objectStore(STORE_MOVIMIENTOS).clear();
+            req.onsuccess = () => res();
+        });
+    }
+    
+    // ==================== FUNCIONES DE UBICACIÓN ====================
+    function generarCodigoUbicacion(deposito, estante, nivel, posicion) {
+        if (!deposito && !estante && !nivel && !posicion) return '---';
+        const d = (deposito || '?').toUpperCase().substring(0, 2);
+        const e = (estante || '?').padStart(2, '0');
+        const n = (nivel || '?').padStart(2, '0');
+        const p = (posicion || '?').padStart(2, '0');
+        return `${d}-${e}-${n}-${p}`;
+    }
+    
+    function actualizarUbicacionGenerada() {
+        const deposito = document.getElementById('modalDeposito').value;
+        const estante = document.getElementById('modalEstante').value;
+        const nivel = document.getElementById('modalNivel').value;
+        const posicion = document.getElementById('modalPosicion').value;
+        document.getElementById('modalUbicacionGenerada').textContent = generarCodigoUbicacion(deposito, estante, nivel, posicion);
+    }
+    
+    // ==================== FUNCIONES DE ALERTAS ====================
+    function calcularDiasEnInventario(fechaIngreso) {
+        if (!fechaIngreso) return 0;
+        const ingreso = new Date(fechaIngreso);
+        const hoy = new Date();
+        const diff = hoy - ingreso;
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+    
+    function calcularDiasParaVencimiento(fechaVencimiento) {
+        if (!fechaVencimiento) return null;
+        const venc = new Date(fechaVencimiento);
+        const hoy = new Date();
+        const diff = venc - hoy;
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+    
+    function obtenerEstadoProducto(producto) {
+        const diasInv = calcularDiasEnInventario(producto.fechaIngreso);
+        const diasVen = calcularDiasParaVencimiento(producto.fechaVencimiento);
+        
+        // Prioridad: vencido > por vencer > obsoleto > stock bajo > normal
+        if (diasVen !== null && diasVen < 0) {
+            return { estado: 'vencido', label: '❌ Vencido', clase: 'badge-vencido' };
+        }
+        if (diasVen !== null && diasVen <= 7) {
+            return { estado: 'por-vencer', label: '⏰ Por vencer', clase: 'badge-vencimiento' };
+        }
+        if (diasInv > 90) {
+            return { estado: 'obsoleto', label: '🗑️ Obsoleto', clase: 'badge-obsoleto' };
+        }
+        if (producto.stock <= producto.stockMin) {
+            return { estado: 'stock-bajo', label: '⚠️ Stock bajo', clase: 'badge-stock-bajo' };
+        }
+        return { estado: 'normal', label: '✅ OK', clase: 'badge-normal' };
+    }
+    
+    function generarAlertas() {
+        const alertas = [];
+        let vencimientoCount = 0;
+        let obsoletoCount = 0;
+        
+        for (const p of productos) {
+            const diasVen = calcularDiasParaVencimiento(p.fechaVencimiento);
+            const diasInv = calcularDiasEnInventario(p.fechaIngreso);
+            
+            if (diasVen !== null && diasVen < 0) {
+                alertas.push({ producto: p.nombre, tipo: 'vencido', mensaje: `⚠️ ¡VENCIDO! Hace ${Math.abs(diasVen)} días` });
+            } else if (diasVen !== null && diasVen <= 7) {
+                alertas.push({ producto: p.nombre, tipo: 'por-vencer', mensaje: `⏰ Vence en ${diasVen} días` });
+                vencimientoCount++;
+            }
+            
+            if (diasInv > 90) {
+                alertas.push({ producto: p.nombre, tipo: 'obsoleto', mensaje: `🗑️ ${diasInv} días en inventario` });
+                obsoletoCount++;
+            }
+            
+            if (p.stock <= p.stockMin) {
+                alertas.push({ producto: p.nombre, tipo: 'stock-bajo', mensaje: `⚠️ Stock: ${p.stock} (mín: ${p.stockMin})` });
+            }
+        }
+        
+        document.getElementById('vencimientoCount').innerHTML = vencimientoCount;
+        document.getElementById('obsoletoCount').innerHTML = obsoletoCount;
+        
+        return alertas;
+    }
+    
+    // ==================== FUNCIONES PRINCIPALES ====================
+    async function actualizarStockProducto(productoId, cantidad, tipo, precioUnitario) {
+        const producto = productos.find(p => p.id === productoId);
+        if (!producto) return false;
+        
+        if (tipo === 'entrada') {
+            producto.stock += cantidad;
+            if (precioUnitario && precioUnitario > 0) {
+                const valorActual = producto.precio * (producto.stock - cantidad);
+                const valorNuevo = precioUnitario * cantidad;
+                producto.precio = (valorActual + valorNuevo) / producto.stock;
+            }
+        } else if (tipo === 'salida') {
+            if (producto.stock >= cantidad) {
+                producto.stock -= cantidad;
+            } else {
+                alert(`Stock insuficiente. Solo hay ${producto.stock} unidades.`);
+                return false;
+            }
+        }
+        await guardarProducto(producto);
+        return true;
+    }
+    
+    async function registrarMovimiento() {
+        if (!puedeAgregarMovimiento()) return;
+        
+        const productoId = parseInt(document.getElementById('kardexProductoSelect').value);
+        const tipo = document.getElementById('movimientoTipo').value;
+        const cantidad = parseInt(document.getElementById('movimientoCantidad').value);
+        const precio = parseFloat(document.getElementById('movimientoPrecio').value) || 0;
+        const documento = document.getElementById('movimientoDoc').value;
+        let fecha = document.getElementById('movimientoFecha').value;
+        if (!fecha) fecha = new Date().toISOString().slice(0,10);
+        
+        if (!productoId || isNaN(productoId) || cantidad <= 0) {
+            alert("Seleccione un producto y cantidad válida");
+            return;
+        }
+        
+        const producto = productos.find(p => p.id === productoId);
+        if (!producto) return;
+        
+        const exito = await actualizarStockProducto(productoId, cantidad, tipo, precio);
+        if (!exito) return;
+        
+        const movimiento = {
+            id: Date.now(),
+            productoId,
+            productoNombre: producto.nombre,
+            serial: producto.serial || '',
+            tipo,
+            cantidad,
+            precioUnitario: precio || producto.precio,
+            total: (precio || producto.precio) * cantidad,
+            documento,
+            fecha,
+            timestamp: new Date().toISOString()
+        };
+        
+        await guardarMovimiento(movimiento);
+        await cargarDatos();
+        renderInventario();
+        renderKardex();
+        renderAlertas();
+        alert("✅ Movimiento registrado");
+        
+        document.getElementById('movimientoCantidad').value = '1';
+        document.getElementById('movimientoPrecio').value = '';
+        document.getElementById('movimientoDoc').value = '';
+    }
+    
+    // ==================== RENDERS ====================
+    async function renderInventario() {
+        productos = await cargarProductos();
+        const tbody = document.getElementById('productosBody');
+        if (!tbody) return;
+        
+        const total = productos.length;
+        const stockBajo = productos.filter(p => p.stock <= p.stockMin).length;
+        const tasa = parseFloat(document.getElementById('tasaBCV')?.value) || 36.5;
+        
+        document.getElementById('totalProductos').innerHTML = total;
+        document.getElementById('stockBajoCount').innerHTML = stockBajo;
+        
+        if (tbody) {
+            tbody.innerHTML = productos.map(p => {
+                const estado = obtenerEstadoProducto(p);
+                const diasInv = calcularDiasEnInventario(p.fechaIngreso);
+                const ubicacion = generarCodigoUbicacion(p.deposito, p.estante, p.nivel, p.posicion);
+                const precioVES = (p.precio * tasa).toFixed(2);
+                const diasVen = calcularDiasParaVencimiento(p.fechaVencimiento);
+                const venceLabel = diasVen !== null ? `${diasVen} días` : (p.fechaVencimiento ? '---' : '-');
+                
+                let rowClass = '';
+                if (estado.estado === 'vencido') rowClass = 'row-alerta-vencido';
+                else if (estado.estado === 'por-vencer') rowClass = 'row-alerta-vencimiento';
+                else if (estado.estado === 'obsoleto') rowClass = 'row-alerta-obsoleto';
+                else if (selectedProductIdForCost === p.id) rowClass = 'selected-row';
+                
+                return `
+                    <tr id="producto-row-${p.id}" class="${rowClass}">
+                        <td><span class="badge-ubicacion">${ubicacion}</span></td>
+                        <td>${escapeHtml(p.serial || '-')}</td>
+                        <td><strong>${escapeHtml(p.nombre)}</strong></td>
+                        <td>${escapeHtml(p.categoria)}</td>
+                        <td>$${p.precio.toFixed(2)}<br><small>Bs. ${precioVES}</small></td>
+                        <td>${p.stock}</td>
+                        <td>${p.stockMin}</td>
+                        <td>${diasInv} días</td>
+                        <td>${venceLabel}</td>
+                        <td><span class="${estado.clase}">${estado.label}</span></td>
+                        <td>
+                            <button onclick="window.seleccionarParaPrecio(${p.id})" class="btn-success btn-sm">🎯</button>
+                            <button onclick="window.editarProducto(${p.id})" class="btn-sm">✏️</button>
+                            <button onclick="window.eliminarProductoHandler(${p.id})" class="btn-danger btn-sm">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Actualizar selects
+        const kardexSelect = document.getElementById('kardexProductoSelect');
+        if (kardexSelect) {
+            kardexSelect.innerHTML = '<option value="">-- Seleccionar --</option>' + productos.map(p => `<option value="${p.id}">${p.serial ? `[${p.serial}] ` : ''}${p.nombre}</option>`).join('');
+        }
+        const costSelect = document.getElementById('productoCostSelect');
+        if (costSelect) {
+            costSelect.innerHTML = '<option value="">-- Seleccionar --</option>' + productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+        }
+        
+        // Actualizar valor inventario
+        const valorTotalUSD = productos.reduce((sum, p) => sum + (p.precio * p.stock), 0);
+        document.getElementById('valorInventarioUSD').innerHTML = `$${valorTotalUSD.toFixed(2)}`;
+        document.getElementById('valorInventarioVES').innerHTML = `Bs. ${(valorTotalUSD * tasa).toFixed(2)}`;
+    }
+    
+    window.seleccionarParaPrecio = function(id) {
+        selectedProductIdForCost = id;
+        renderInventario();
+        const costSelect = document.getElementById('productoCostSelect');
+        if (costSelect) costSelect.value = id;
+        calcularPrecioSugerido();
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.section-content').forEach(sec => sec.style.display = 'none');
+        document.querySelector('.nav-item[data-section="costos"]').classList.add('active');
+        document.getElementById('section-costos').style.display = 'block';
+    };
+    
+    function renderAlertas() {
+        const alertas = generarAlertas();
+        const container = document.getElementById('alertasLista');
+        if (!container) return;
+        
+        if (alertas.length === 0) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:#666;">✅ No hay alertas activas. Todo en orden.</div>';
+            return;
+        }
+        
+        container.innerHTML = alertas.map(a => `
+            <div style="padding:12px; border-bottom:1px solid #eef2f6; display:flex; justify-content:space-between; align-items:center;">
+                <span><strong>${a.producto}</strong> - ${a.mensaje}</span>
+                <span class="${a.tipo === 'vencido' ? 'badge-vencido' : a.tipo === 'por-vencer' ? 'badge-vencimiento' : 'badge-stock-bajo'}">${a.tipo}</span>
+            </div>
+        `).join('');
+    }
+    
+    function renderAlertasBanner() {
+        const alertas = generarAlertas();
+        const container = document.getElementById('alertaBannerContainer');
+        if (!container) return;
+        
+        const criticas = alertas.filter(a => a.tipo === 'vencido' || a.tipo === 'por-vencer');
+        if (criticas.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        
+        container.innerHTML = `
+            <div class="alerta-banner ${criticas.some(a => a.tipo === 'vencido') ? 'danger' : ''}">
+                <span>🔔 <strong>${criticas.length} alerta(s) crítica(s):</strong> ${criticas.map(a => `${a.producto} (${a.mensaje})`).join(' · ')}</span>
+                <button onclick="document.querySelector('.nav-item[data-section=\\'alertas\\']').click()" class="btn-sm">Ver todas</button>
+            </div>
+        `;
+    }
+    
+    async function renderKardex() {
+        movimientos = await cargarMovimientos();
+        const tbody = document.getElementById('movimientosBody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = movimientos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0,100).map(m => `
+            <tr>
+                <td>${m.fecha}</td>
+                <td>${escapeHtml(m.productoNombre || '')}</td>
+                <td>${escapeHtml(m.serial || '-')}</td>
+                <td>${m.tipo === 'entrada' ? '➕ Entrada' : '➖ Salida'}</td>
+                <td>${m.cantidad}</td>
+                <td>$${m.precioUnitario?.toFixed(2) || '-'}</td>
+                <td>$${m.total?.toFixed(2) || '-'}</td>
+                <td>${escapeHtml(m.documento || '-')}</td>
+            </tr>
+        `).join('');
+    }
+    
+    // ==================== COST PLUS ====================
+    function getCFT() {
+        let total = 0;
+        document.querySelectorAll('#tbodyCFT .cft-valor').forEach(inp => total += parseFloat(inp.value) || 0);
+        return total;
+    }
+    
+    function getCVT() {
+        let total = 0;
+        document.querySelectorAll('#tbodyCVT .cvt-valor').forEach(inp => total += parseFloat(inp.value) || 0);
+        return total;
+    }
+    
+    function actualizarTotalesCostos() {
+        document.getElementById('totalCFT').innerText = getCFT().toFixed(2);
+        document.getElementById('totalCVT').innerText = getCVT().toFixed(2);
+    }
+    
+    function calcularPrecioSugerido() {
+        const selectProducto = document.getElementById('productoCostSelect');
+        let productoId = selectedProductIdForCost;
+        if (selectProducto && selectProducto.value) {
+            productoId = parseInt(selectProducto.value);
+            selectedProductIdForCost = productoId;
+        }
+        
+        const productoSeleccionado = productos.find(p => p.id === productoId);
+        const cft = getCFT();
+        const cvt = getCVT();
+        let q = parseFloat(document.getElementById('q').value) || 1;
+        let mu = parseFloat(document.getElementById('mu').value) || 0;
+        const tasa = parseFloat(document.getElementById('tasaBCV').value) || 36.5;
+        const simbolo = '$';
+        
+        if (q <= 0) q = 1;
+        
+        if (productoSeleccionado) {
+            const costosDistribuidos = (cft + cvt) / q;
+            const costoTotalUnitario = productoSeleccionado.precio + costosDistribuidos;
+            const precioBase = costoTotalUnitario * (1 + mu / 100);
+            
+            document.getElementById('precioFinal').innerHTML = `${simbolo} ${precioBase.toFixed(2)}`;
+            document.getElementById('productoSugeridoInfo').innerHTML = `
+                <strong>${productoSeleccionado.nombre}</strong><br>
+                Costo producto: $${productoSeleccionado.precio.toFixed(2)}<br>
+                Costos distribuidos: $${costosDistribuidos.toFixed(2)}
+            `;
+            
+            const cftUnit = cft / q;
+            const cvtUnit = cvt / q;
+            const gananciaUnit = precioBase - (productoSeleccionado.precio + cftUnit + cvtUnit);
+            
+            document.getElementById('desgloseCostos').innerHTML = `
+                📌 Costo Producto: ${simbolo} ${productoSeleccionado.precio.toFixed(2)}<br>
+                📌 CF distribuido: ${simbolo} ${cftUnit.toFixed(2)}<br>
+                📌 CV distribuido: ${simbolo} ${cvtUnit.toFixed(2)}<br>
+                📌 Costo Total Unitario: ${simbolo} ${(productoSeleccionado.precio + cftUnit + cvtUnit).toFixed(2)}<br>
+                📌 Ganancia (${mu}%): ${simbolo} ${gananciaUnit.toFixed(2)}
+            `;
+            
+            const margenContribucion = precioBase - (productoSeleccionado.precio + cvtUnit);
+            if (margenContribucion > 0) {
+                const peq = cft / margenContribucion;
+                document.getElementById('equilibrioContenido').innerHTML = `
+                    📊 Unidades necesarias: <strong>${Math.ceil(peq)}</strong> unidades<br>
+                    ${q >= peq ? '✅ Superas el equilibrio.' : `⚠️ Faltan ${Math.ceil(peq - q)} unidades.`}
+                `;
+            } else {
+                document.getElementById('equilibrioContenido').innerHTML = '⚠️ Margen de contribución negativo.';
+            }
+            
+            if (chartObj) chartObj.destroy();
+            const ctx = document.getElementById('marginChart').getContext('2d');
+            chartObj = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Costo Producto', 'Costo Fijo xU', 'Costo Variable xU', 'Ganancia xU'],
+                    datasets: [{ label: simbolo, data: [productoSeleccionado.precio, cftUnit, cvtUnit, gananciaUnit], backgroundColor: ['#3b82f6', '#6366f1', '#f59e0b', '#10b981'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: true }
+            });
+        } else {
+            document.getElementById('precioFinal').innerHTML = '---';
+            document.getElementById('productoSugeridoInfo').innerHTML = '🎯 Selecciona un producto';
+            document.getElementById('desgloseCostos').innerHTML = 'Selecciona un producto para calcular.';
+            document.getElementById('equilibrioContenido').innerHTML = '---';
+        }
+    }
+    
+    // ==================== CRUD PRODUCTOS ====================
+    async function guardarProductoModal() {
+        const serial = document.getElementById('modalSerial').value;
+        const nombre = document.getElementById('modalNombre').value;
+        const categoria = document.getElementById('modalCategoria').value;
+        const precio = parseFloat(document.getElementById('modalPrecio').value);
+        const stock = parseInt(document.getElementById('modalStock').value) || 0;
+        const stockMin = parseInt(document.getElementById('modalStockMin').value) || 0;
+        const deposito = document.getElementById('modalDeposito').value;
+        const estante = document.getElementById('modalEstante').value;
+        const nivel = document.getElementById('modalNivel').value;
+        const posicion = document.getElementById('modalPosicion').value;
+        const fechaIngreso = document.getElementById('modalFechaIngreso').value || new Date().toISOString().slice(0,10);
+        const fechaVencimiento = document.getElementById('modalFechaVencimiento').value || '';
+        
+        if (!nombre || !categoria || isNaN(precio)) {
+            alert("Complete los campos obligatorios");
+            return;
+        }
+        
+        if (!editingProductId && !puedeAgregarProducto()) return;
+        
+        const producto = {
+            serial, nombre, categoria, precio, stock, stockMin,
+            deposito, estante, nivel, posicion,
+            fechaIngreso, fechaVencimiento
+        };
+        if (editingProductId) producto.id = editingProductId;
+        
+        await guardarProducto(producto);
+        document.getElementById('productoModal').classList.add('hidden');
+        editingProductId = null;
+        await cargarDatos();
+        renderInventario();
+        renderAlertas();
+        renderAlertasBanner();
+    }
+    
+    window.editarProducto = function(id) {
+        const p = productos.find(p => p.id === id);
+        if (p) {
+            editingProductId = id;
+            document.getElementById('modalTitle').innerText = 'Editar Producto';
+            document.getElementById('modalSerial').value = p.serial || '';
+            document.getElementById('modalNombre').value = p.nombre;
+            document.getElementById('modalCategoria').value = p.categoria;
+            document.getElementById('modalPrecio').value = p.precio;
+            document.getElementById('modalStock').value = p.stock;
+            document.getElementById('modalStockMin').value = p.stockMin;
+            document.getElementById('modalDeposito').value = p.deposito || '';
+            document.getElementById('modalEstante').value = p.estante || '';
+            document.getElementById('modalNivel').value = p.nivel || '';
+            document.getElementById('modalPosicion').value = p.posicion || '';
+            document.getElementById('modalFechaIngreso').value = p.fechaIngreso || '';
+            document.getElementById('modalFechaVencimiento').value = p.fechaVencimiento || '';
+            actualizarUbicacionGenerada();
+            document.getElementById('productoModal').classList.remove('hidden');
+        }
+    };
+    
+    window.eliminarProductoHandler = async function(id) {
+        if (confirm('¿Eliminar este producto?')) {
+            await eliminarProducto(id);
+            if (selectedProductIdForCost === id) selectedProductIdForCost = null;
+            await cargarDatos();
+            renderInventario();
+            renderKardex();
+            renderAlertas();
+            renderAlertasBanner();
+            calcularPrecioSugerido();
+        }
+    };
+    
+    // ==================== REPORTES ====================
+    async function generarReporte() {
+        const inicio = document.getElementById('reporteFechaInicio').value;
+        const fin = document.getElementById('reporteFechaFin').value;
+        if (!inicio || !fin) { alert("Seleccione fechas"); return; }
+        
+        let movs = await cargarMovimientos();
+        movs = movs.filter(m => m.fecha >= inicio && m.fecha <= fin);
+        
+        let html = `<p><strong>Período:</strong> ${inicio} al ${fin}</p>
+            <table class="data-table"><thead><tr><th>Producto</th><th>Serial</th><th>Inv.Inicial</th><th>Entradas</th><th>Salidas</th><th>Inv.Final</th></tr></thead><tbody>`;
+        
+        for (const p of productos) {
+            const entradas = movs.filter(m => m.productoId === p.id && m.tipo === 'entrada').reduce((s, m) => s + m.cantidad, 0);
+            const salidas = movs.filter(m => m.productoId === p.id && m.tipo === 'salida').reduce((s, m) => s + m.cantidad, 0);
+            const invFinal = p.stock;
+            const invInicial = invFinal - entradas + salidas;
+            html += `<tr><td>${p.nombre}</td><td>${p.serial || '-'}</td><td>${invInicial}</td><td>${entradas}</td><td>${salidas}</td><td><strong>${invFinal}</strong></td></tr>`;
+        }
+        html += `</tbody></table>`;
+        document.getElementById('reporteContenido').innerHTML = html;
+        document.getElementById('reporteResultados').style.display = 'block';
+    }
+    
+    // ==================== NAVEGACIÓN ====================
+    function initNavigation() {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+                const section = item.dataset.section;
+                document.querySelectorAll('.section-content').forEach(sec => sec.style.display = 'none');
+                document.getElementById(`section-${section}`).style.display = 'block';
+                if (section === 'inventario') { renderInventario(); renderAlertasBanner(); }
+                if (section === 'kardex') { renderKardex(); renderInventario(); }
+                if (section === 'alertas') { renderAlertas(); }
+                if (section === 'costos') calcularPrecioSugerido();
+                if (section === 'config') actualizarTotalesCostos();
+            });
+        });
+    }
+    
+    function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>]/g, function(m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]; }); }
+    
+    async function cargarDatos() {
+        productos = await cargarProductos();
+        movimientos = await cargarMovimientos();
+    }
+    
+    // ==================== INICIALIZACIÓN ====================
+    async function init() {
+        await abrirDB();
+        await cargarDatos();
+        cargarLicenciaGuardada();
+        renderInventario();
+        renderKardex();
+        renderAlertas();
+        renderAlertasBanner();
+        initNavigation();
+        calcularPrecioSugerido();
+        actualizarTotalesCostos();
+        
+        if (!IS_FULL_VERSION) {
+            const watermark = document.createElement('div');
+            watermark.className = 'watermark-demo';
+            watermark.innerHTML = '🔒 DEMO · Máx 3 productos | 💎 Compra FULL';
+            document.body.appendChild(watermark);
+        }
+        
+        // Eventos
+        document.getElementById('addProductBtn')?.addEventListener('click', () => {
+            if (!puedeAgregarProducto()) return;
+            editingProductId = null;
+            document.getElementById('modalTitle').innerText = 'Agregar Producto';
+            document.getElementById('modalSerial').value = '';
+            document.getElementById('modalNombre').value = '';
+            document.getElementById('modalCategoria').value = '';
+            document.getElementById('modalPrecio').value = '';
+            document.getElementById('modalStock').value = '0';
+            document.getElementById('modalStockMin').value = '5';
+            document.getElementById('modalDeposito').value = '';
+            document.getElementById('modalEstante').value = '';
+            document.getElementById('modalNivel').value = '';
+            document.getElementById('modalPosicion').value = '';
+            document.getElementById('modalFechaIngreso').value = new Date().toISOString().slice(0,10);
+            document.getElementById('modalFechaVencimiento').value = '';
+            actualizarUbicacionGenerada();
+            document.getElementById('productoModal').classList.remove('hidden');
+        });
+        
+        document.getElementById('guardarProductoBtn')?.addEventListener('click', guardarProductoModal);
+        document.getElementById('cancelarModalBtn')?.addEventListener('click', () => document.getElementById('productoModal').classList.add('hidden'));
+        document.getElementById('registrarMovimientoBtn')?.addEventListener('click', registrarMovimiento);
+        document.getElementById('calcularCostosBtn')?.addEventListener('click', calcularPrecioSugerido);
+        document.getElementById('generarReporteBtn')?.addEventListener('click', generarReporte);
+        document.getElementById('q')?.addEventListener('input', calcularPrecioSugerido);
+        document.getElementById('mu')?.addEventListener('input', calcularPrecioSugerido);
+        document.getElementById('tasaBCV')?.addEventListener('input', () => { renderInventario(); calcularPrecioSugerido(); });
+        document.getElementById('productoCostSelect')?.addEventListener('change', () => {
+            const val = document.getElementById('productoCostSelect').value;
+            if (val) { selectedProductIdForCost = parseInt(val); renderInventario(); calcularPrecioSugerido(); }
+        });
+        
+        // Ubicación en tiempo real
+        ['modalDeposito', 'modalEstante', 'modalNivel', 'modalPosicion'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', actualizarUbicacionGenerada);
+        });
+        
+        // Exportaciones
+        document.getElementById('exportInventarioExcelBtn')?.addEventListener('click', async () => {
+            if (!puedeExportar()) return;
+            const data = [["Ubicación", "Serial", "Producto", "Categoría", "Precio USD", "Stock", "Mínimo", "Días Inv.", "Vence"]];
+            productos.forEach(p => {
+                const ubicacion = generarCodigoUbicacion(p.deposito, p.estante, p.nivel, p.posicion);
+                const diasInv = calcularDiasEnInventario(p.fechaIngreso);
+                const diasVen = calcularDiasParaVencimiento(p.fechaVencimiento);
+                data.push([ubicacion, p.serial || '', p.nombre, p.categoria, p.precio, p.stock, p.stockMin, diasInv, diasVen !== null ? `${diasVen} días` : '-']);
+            });
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+            XLSX.writeFile(wb, `inventario_${Date.now()}.xlsx`);
+        });
+        
+        document.getElementById('exportInventarioPDFBtn')?.addEventListener('click', () => {
+            if (!puedeExportar()) return;
+            let html = `<html><head><meta charset="UTF-8"><title>Inventario</title><style>table{border-collapse:collapse;width:100%} th,td{border:1px solid #ccc;padding:6px;font-size:10px;}</style></head><body>
+                <h2>${document.getElementById('empresaNombre').value}</h2>
+                <p>Fecha: ${new Date().toLocaleString()}</p>
+                <table><thead><tr><th>Ubicación</th><th>Serial</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Días</th></tr></thead><tbody>`;
+            productos.forEach(p => {
+                const ubicacion = generarCodigoUbicacion(p.deposito, p.estante, p.nivel, p.posicion);
+                const diasInv = calcularDiasEnInventario(p.fechaIngreso);
+                html += `<tr><td>${ubicacion}</td><td>${p.serial || '-'}</td><td>${p.nombre}</td><td>${p.categoria}</td><td>$${p.precio.toFixed(2)}</td><td>${p.stock}</td><td>${diasInv}</td></tr>`;
+            });
+            html += `</tbody></table></body></html>`;
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+            setTimeout(() => win.print(), 300);
+        });
+        
+        // Respaldos
+        document.getElementById('respaldarCompletoBtn')?.addEventListener('click', async () => {
+            if (!puedeExportar()) return;
+            const data = { productos: await cargarProductos(), movimientos: await cargarMovimientos(), fecha: new Date().toISOString() };
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+            a.download = `respaldo_${Date.now()}.json`;
+            a.click();
+        });
+        
+        document.getElementById('restaurarCompletoBtn')?.addEventListener('click', () => document.getElementById('restoreFileInput').click());
+        document.getElementById('restoreFileInput')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (data.productos) { for (const p of data.productos) await guardarProducto(p); }
+                    if (data.movimientos) {
+                        await eliminarTodosMovimientos();
+                        for (const m of data.movimientos) await guardarMovimiento(m);
+                    }
+                    await cargarDatos();
+                    renderInventario();
+                    renderKardex();
+                    renderAlertas();
+                    renderAlertasBanner();
+                    alert("✅ Datos restaurados");
+                } catch (err) { alert("Error: " + err.message); }
+            };
+            reader.readAsText(file);
+        });
+        
+        document.getElementById('limpiarDatosBtn')?.addEventListener('click', async () => {
+            if (confirm('¿Eliminar TODOS los datos?')) {
+                const tx = db.transaction([STORE_PRODUCTOS, STORE_MOVIMIENTOS], "readwrite");
+                tx.objectStore(STORE_PRODUCTOS).clear();
+                tx.objectStore(STORE_MOVIMIENTOS).clear();
+                await cargarDatos();
+                renderInventario();
+                renderKardex();
+                renderAlertas();
+                renderAlertasBanner();
+                alert("✅ Datos limpiados");
+            }
+        });
+        
+        document.getElementById('activarLicenciaBtn')?.addEventListener('click', () => {
+            const serial = document.getElementById('licenciaSerial').value;
+            if (activarLicencia(serial)) location.reload();
+        });
+        document.getElementById('cerrarLicenciaModal')?.addEventListener('click', () => document.getElementById('licenciaModal').classList.add('hidden'));
+        document.getElementById('exportarReporteExcelBtn')?.addEventListener('click', async () => {
+            if (!puedeExportar()) return;
+            const inicio = document.getElementById('reporteFechaInicio').value;
+            const fin = document.getElementById('reporteFechaFin').value;
+            if (!inicio || !fin) { alert("Genere primero el reporte"); return; }
+            const data = [["Producto", "Serial", "Inv.Inicial", "Entradas", "Salidas", "Inv.Final"]];
+            const movs = (await cargarMovimientos()).filter(m => m.fecha >= inicio && m.fecha <= fin);
+            for (const p of productos) {
+                const entradas = movs.filter(m => m.productoId === p.id && m.tipo === 'entrada').reduce((s, m) => s + m.cantidad, 0);
+                const salidas = movs.filter(m => m.productoId === p.id && m.tipo === 'salida').reduce((s, m) => s + m.cantidad, 0);
+                const invFinal = p.stock;
+                const invInicial = invFinal - entradas + salidas;
+                data.push([p.nombre, p.serial || '-', invInicial, entradas, salidas, invFinal]);
+            }
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+            XLSX.writeFile(wb, `reporte_${inicio}_a_${fin}.xlsx`);
+        });
+        document.getElementById('exportarReportePDFBtn')?.addEventListener('click', () => {
+            if (!puedeExportar()) return;
+            const contenido = document.getElementById('reporteContenido').innerHTML;
+            if (!contenido) { alert("Genere primero el reporte"); return; }
+            const empresa = document.getElementById('empresaNombre').value;
+            const html = `<html><head><meta charset="UTF-8"><title>Reporte</title><style>body{font-family:Arial;padding:20px;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #ccc;padding:6px;font-size:10px;}</style></head>
+                <body><h2>${empresa}</h2><p>Fecha: ${new Date().toLocaleString()}</p>${contenido}</body></html>`;
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+            setTimeout(() => win.print(), 300);
+        });
+        
+        // Costos dinámicos
+        document.getElementById('agregarCFT')?.addEventListener('click', () => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td><input type="text" class="cft-concepto" placeholder="Nuevo"></td><td><input type="number" class="cft-valor" value="0"></td><td><button class="btn-eliminar-costo">🗑️</button></td>`;
+            document.getElementById('tbodyCFT').appendChild(row);
+            row.querySelector('.btn-eliminar-costo').addEventListener('click', function() { this.closest('tr')?.remove(); actualizarTotalesCostos(); calcularPrecioSugerido(); });
+            row.querySelector('.cft-valor').addEventListener('input', () => { actualizarTotalesCostos(); calcularPrecioSugerido(); });
+            actualizarTotalesCostos();
+        });
+        document.getElementById('agregarCVT')?.addEventListener('click', () => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td><input type="text" class="cvt-concepto" placeholder="Nuevo"></td><td><input type="number" class="cvt-valor" value="0"></td><td><button class="btn-eliminar-costo">🗑️</button></td>`;
+            document.getElementById('tbodyCVT').appendChild(row);
+            row.querySelector('.btn-eliminar-costo').addEventListener('click', function() { this.closest('tr')?.remove(); actualizarTotalesCostos(); calcularPrecioSugerido(); });
+            row.querySelector('.cvt-valor').addEventListener('input', () => { actualizarTotalesCostos(); calcularPrecioSugerido(); });
+            actualizarTotalesCostos();
+        });
+        document.querySelectorAll('.btn-eliminar-costo').forEach(btn => {
+            btn.addEventListener('click', function() { this.closest('tr')?.remove(); actualizarTotalesCostos(); calcularPrecioSugerido(); });
+        });
+        document.querySelectorAll('#tbodyCFT .cft-valor, #tbodyCVT .cvt-valor').forEach(inp => {
+            inp.addEventListener('input', () => { actualizarTotalesCostos(); calcularPrecioSugerido(); });
+        });
+    }
+    
+    init();
+</script>
+</body>
+</html>
