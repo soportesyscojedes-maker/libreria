@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Trípode - Con Volteo 3D</title>
+    <style>
+        /* ====================================================
+           ESTILOS GLOBALES
+           ==================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .app {
+            max-width: 1400px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        /* ====================================================
+           LOGIN
+           ==================================================== */
+        .login-box {
+            max-width: 400px;
+            margin: 60px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            text-align: center;
+        }
+        .login-box h2 {
+            color: #1a1a2e;
+            margin-bottom: 20px;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .login-box input:focus {
+            border-color: #5b9bd5;
+            outline: none;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: #5b9bd5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .login-box button:hover {
+            background: #4a8ac4;
+        }
+        .login-box .error {
+            color: #d32f2f;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .login-box .info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* ====================================================
+           LAYOUT PRINCIPAL
+           ==================================================== */
+        .main-layout {
+            display: none;
+            gap: 20px;
+        }
+        .main-layout.active {
+            display: flex;
+        }
+
+        /* ---- SIDEBAR (azul pastel) ---- */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: #B3D4F0;
+            border-radius: 16px;
+            padding: 20px 0;
+            color: #1a2a3a;
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+            min-height: 500px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .sidebar .logo {
+            text-align: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            margin-bottom: 10px;
+        }
+        .sidebar .logo h2 {
+            font-size: 20px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            color: #1a2a3a;
+        }
+        .sidebar .logo span {
+            font-weight: 700;
+            color: #1a5a8a;
+        }
+        .sidebar .user-info {
+            padding: 0 20px 15px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            margin-bottom: 10px;
+            color: #1a2a3a;
+        }
+        .sidebar .user-info strong {
+            color: #1a5a8a;
+        }
+
+        .sidebar .menu-item {
+            padding: 14px 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            color: #1a2a3a;
+            border-left: 4px solid transparent;
+        }
+        .sidebar .menu-item:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        .sidebar .menu-item.active {
+            background: rgba(255,255,255,0.6);
+            border-left-color: #1a5a8a;
+            border-radius: 0 12px 12px 0;
+        }
+        .sidebar .menu-item .icon {
+            font-size: 20px;
+        }
+        .sidebar .menu-item .badge {
+            background: #1a5a8a;
+            color: #fff;
+            border-radius: 20px;
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-left: auto;
+        }
+
+        .sidebar .logout-section {
+            margin-top: auto;
+            padding: 20px;
+            border-top: 1px solid rgba(0,0,0,0.06);
+        }
+        .sidebar .logout-section button {
+            width: 100%;
+            padding: 10px;
+            background: #d32f2f;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .sidebar .logout-section button:hover {
+            background: #b71c1c;
+        }
+
+        /* ---- CONTENIDO ---- */
+        .content {
+            flex: 1;
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            min-height: 500px;
+        }
+        .content .panel {
+            display: none;
+        }
+        .content .panel.active {
+            display: block;
+        }
+        .content .panel h2 {
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #B3D4F0;
+        }
+
+        /* ====================================================
+           PANEL DE LIBROS (Vista con 3D y volteo)
+           ==================================================== */
+        .visor-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .visor-header input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+        .visor-header input:focus {
+            border-color: #5b9bd5;
+            outline: none;
+        }
+        .visor-header button {
+            padding: 12px 24px;
+            background: #5b9bd5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .visor-header button:hover {
+            background: #4a8ac4;
+        }
+
+        /* ====================================================
+           TARJETA 3D CON VOLTEO
+           ==================================================== */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 24px;
+            perspective: 1200px;
+        }
+
+        .card-container {
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            cursor: pointer;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+        }
+        .card-container:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        .card-flip {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+        .card-container.flipped .card-flip {
+            transform: rotateY(180deg);
+        }
+
+        .card-front,
+        .card-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 14px;
+            backface-visibility: hidden;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background: #fff;
+        }
+
+        /* ---- FRENTE ---- */
+        .card-front {
+            display: flex;
+            flex-direction: column;
+        }
+        .card-front img {
+            width: 100%;
+            height: 65%;
+            object-fit: cover;
+            background: #f5f0eb;
+        }
+        .card-front .info {
+            padding: 12px 14px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card-front .info h3 {
+            font-size: 15px;
+            color: #1a1a2e;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-front .info .autor {
+            font-size: 13px;
+            color: #666;
+        }
+        .card-front .info .precio {
+            font-weight: 700;
+            color: #1a5a8a;
+            font-size: 16px;
+        }
+        .card-front .info .unidades {
+            font-size: 12px;
+            color: #888;
+        }
+        .card-front .favorito-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ffd54f;
+            color: #1a1a2e;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 2;
+        }
+
+        /* ---- REVERSO (RESEÑA) ---- */
+        .card-back {
+            transform: rotateY(180deg);
+            background: #faf8f5;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .card-back .back-titulo {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        .card-back .back-reseña {
+            font-size: 13px;
+            color: #444;
+            line-height: 1.5;
+            overflow-y: auto;
+            max-height: 70%;
+            padding: 0 6px;
+        }
+        .card-back .back-autor {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #888;
+        }
+        .card-back .back-precio {
+            margin-top: 6px;
+            font-weight: 700;
+            color: #1a5a8a;
+            font-size: 15px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .card-actions button {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .card-actions button:hover {
+            opacity: 0.85;
+        }
+        .btn-favorito {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-favorito.activo {
+            background: #ffd54f;
+            color: #1a1a2e;
+        }
+        .btn-editar {
+            background: #ffb300;
+            color: #1a1a2e;
+        }
+        .btn-eliminar {
+            background: #d32f2f;
+            color: #fff;
+        }
+
+        /* ====================================================
+           PANEL DE ADMINISTRACIÓN
+           ==================================================== */
+        .admin-panel form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .admin-panel form input,
+        .admin-panel form textarea {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 100%;
+        }
+        .admin-panel form input:focus,
+        .admin-panel form textarea:focus {
+            border-color: #5b9bd5;
+            outline: none;
+        }
+        .admin-panel form textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .admin-panel form button {
+            padding: 12px 24px;
+            background: #5b9bd5;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .admin-panel form button:hover {
+            background: #4a8ac4;
+        }
+        .admin-panel form .btn-cancelar {
+            background: #d32f2f;
+        }
+        .admin-panel form .btn-cancelar:hover {
+            background: #b71c1c;
+        }
+        .admin-panel .mensaje {
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        /* ====================================================
+           PANEL DE RESPALDO
+           ==================================================== */
+        .backup-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .backup-panel .backup-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .backup-panel .backup-actions button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .backup-panel .backup-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .btn-exportar {
+            background: #5b9bd5;
+            color: #fff;
+        }
+        .btn-importar {
+            background: #2e7d32;
+            color: #fff;
+        }
+        .btn-importar input[type="file"] {
+            display: none;
+        }
+        .backup-panel .info-backup {
+            background: #f5f9ff;
+            padding: 16px 20px;
+            border-radius: 10px;
+            color: #444;
+            font-size: 14px;
+            border-left: 4px solid #5b9bd5;
+        }
+
+        /* ====================================================
+           MODAL
+           ==================================================== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .modal-content h2 {
+            color: #1a1a2e;
+            margin-bottom: 20px;
+        }
+        .modal-content input,
+        .modal-content textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .modal-content input:focus,
+        .modal-content textarea:focus {
+            border-color: #5b9bd5;
+            outline: none;
+        }
+        .modal-content textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .modal-actions button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .modal-actions .btn-guardar {
+            background: #5b9bd5;
+            color: #fff;
+        }
+        .modal-actions .btn-guardar:hover {
+            background: #4a8ac4;
+        }
+        .modal-actions .btn-cerrar-modal {
+            background: #d32f2f;
+            color: #fff;
+        }
+        .modal-actions .btn-cerrar-modal:hover {
+            background: #b71c1c;
+        }
+
+        /* ====================================================
+           SIDEBAR DE FAVORITOS (flotante)
+           ==================================================== */
+        #sidebarFav {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 340px;
+            height: 100%;
+            background: #fff;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+            z-index: 2000;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        #sidebarFav .fav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #sidebarFav .fav-header h2 {
+            color: #1a1a2e;
+        }
+        #sidebarFav .fav-header button {
+            background: #d32f2f;
+            color: #fff;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .fav-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .fav-item .fav-info strong {
+            display: block;
+            font-size: 14px;
+        }
+        .fav-item .fav-info span {
+            font-size: 13px;
+            color: #666;
+        }
+        .fav-item button {
+            background: #d32f2f;
+            color: #fff;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* ====================================================
+           RESPONSIVE
+           ==================================================== */
+        @media (max-width: 768px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                min-width: unset;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 12px 16px;
+                min-height: auto;
+                border-radius: 12px;
+            }
+            .sidebar .logo,
+            .sidebar .user-info,
+            .sidebar .logout-section {
+                display: none;
+            }
+            .sidebar .menu-item {
+                padding: 10px 16px;
+                font-size: 14px;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            .sidebar .menu-item.active {
+                border-bottom-color: #1a5a8a;
+                background: rgba(255,255,255,0.3);
+                border-radius: 0;
+            }
+            .sidebar .menu-item .badge {
+                margin-left: 6px;
+            }
+            .sidebar .logout-section {
+                display: block;
+                margin-top: 0;
+                padding: 0;
+                border: none;
+                width: 100%;
+                margin-top: 8px;
+            }
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+            .admin-panel form {
+                grid-template-columns: 1fr;
+            }
+            .backup-panel .backup-actions {
+                flex-direction: column;
+            }
+            #sidebarFav {
+                width: 100%;
+            }
+        }
+        @media (max-width: 480px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .visor-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <!-- ===== LOGIN ===== -->
+    <div id="loginBox" class="login-box">
+        <h2>📚 Catálogo Trípode</h2>
+        <p style="color:#666; margin-bottom:16px;">🔐 Acceso al sistema</p>
+        <input type="text" id="loginUsuario" placeholder="Usuario" value="admin">
+        <input type="password" id="loginClave" placeholder="Clave" value="1234">
+        <button onclick="iniciarSesion()">Ingresar</button>
+        <div id="loginError" class="error"></div>
+        <div class="info">
+            <strong>admin</strong> / clave: <strong>1234</strong> &nbsp;|&nbsp; <strong>visitante</strong> (sin clave)
+        </div>
+    </div>
+
+    <!-- ===== LAYOUT PRINCIPAL ===== -->
+    <div id="mainLayout" class="main-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>📚 <span>Trípode</span></h2>
+            </div>
+            <div class="user-info">
+                👤 <strong id="usuarioSidebar">admin</strong>
+            </div>
+
+            <div class="menu-item active" data-panel="panelLibros" onclick="cambiarPanel('panelLibros')">
+                <span class="icon">📖</span> Vista de Libros
+                <span class="badge" id="contadorLibrosSidebar">0</span>
+            </div>
+            <div class="menu-item" data-panel="panelAdmin" onclick="cambiarPanel('panelAdmin')" id="menuAdmin">
+                <span class="icon">⚙️</span> Administración
+            </div>
+            <div class="menu-item" data-panel="panelBackup" onclick="cambiarPanel('panelBackup')">
+                <span class="icon">💾</span> Respaldo
+            </div>
+
+            <div class="logout-section">
+                <button onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO -->
+        <main class="content">
+
+            <!-- PANEL: LIBROS -->
+            <div id="panelLibros" class="panel active">
+                <h2>📖 Catálogo de Libros</h2>
+                <div class="visor-header">
+                    <input type="text" id="searchInput" placeholder="Buscar por título, autor o reseña...">
+                    <button onclick="mostrarTodos()">📋 Mostrar todos</button>
+                    <button onclick="toggleSidebarFav()" style="background:#ffd54f; color:#1a1a2e;">
+                        ❤️ Favoritos (<span id="contadorFavHeader">0</span>)
+                    </button>
+                </div>
+                <div id="grid" class="grid"></div>
+            </div>
+
+            <!-- PANEL: ADMINISTRACIÓN -->
+            <div id="panelAdmin" class="panel">
+                <h2>⚙️ Administrar Catálogo</h2>
+                <div class="admin-panel">
+                    <form id="formLibro">
+                        <input type="hidden" id="editId" value="">
+                        <input type="text" id="titulo" placeholder="Título del libro" required>
+                        <input type="text" id="autor" placeholder="Autor" required>
+                        <textarea id="reseña" placeholder="Reseña del libro" required></textarea>
+                        <input type="number" id="precio" placeholder="Precio (USD)" step="0.01" required>
+                        <input type="number" id="unidades" placeholder="Unidades disponibles" required>
+                        <input type="file" id="imagen" accept="image/*">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; grid-column: 1 / -1;">
+                            <button type="submit">💾 Guardar Libro</button>
+                            <button type="button" class="btn-cancelar" onclick="cancelarEdicion()">❌ Cancelar</button>
+                        </div>
+                    </form>
+                    <div id="mensajeAdmin" class="mensaje"></div>
+                </div>
+            </div>
+
+            <!-- PANEL: RESPALDO -->
+            <div id="panelBackup" class="panel">
+                <h2>💾 Respaldo de Datos</h2>
+                <div class="backup-panel">
+                    <div class="backup-actions">
+                        <button class="btn-exportar" onclick="exportarJSON()">📤 Exportar a JSON</button>
+                        <button class="btn-importar" onclick="document.getElementById('importFile').click()">
+                            📥 Importar desde JSON
+                        </button>
+                        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importarJSON(event)">
+                    </div>
+                    <div class="info-backup">
+                        <strong>📌 ¿Qué incluye el respaldo?</strong><br>
+                        Todos los libros del catálogo (títulos, autores, reseñas, precios, unidades e imágenes) + tu lista de favoritos.
+                        El archivo se guarda en formato <strong>JSON</strong> y puede ser restaurado en cualquier momento.
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ===== SIDEBAR DE FAVORITOS ===== -->
+    <div id="sidebarFav">
+        <div class="fav-header">
+            <h2>❤️ Favoritos</h2>
+            <button onclick="toggleSidebarFav()">✕ Cerrar</button>
+        </div>
+        <div id="listaFavoritos"></div>
+    </div>
+
+    <!-- ===== MODAL DE EDICIÓN ===== -->
+    <div id="modalEditar" class="modal">
+        <div class="modal-content">
+            <h2>✏️ Editar Libro</h2>
+            <input type="hidden" id="modalEditId">
+            <input type="text" id="modalTitulo" placeholder="Título">
+            <input type="text" id="modalAutor" placeholder="Autor">
+            <textarea id="modalReseña" placeholder="Reseña"></textarea>
+            <input type="number" id="modalPrecio" placeholder="Precio (USD)" step="0.01">
+            <input type="number" id="modalUnidades" placeholder="Unidades disponibles">
+            <input type="file" id="modalImagen" accept="image/*">
+            <div class="modal-actions">
+                <button class="btn-guardar" onclick="guardarEdicionModal()">💾 Guardar</button>
+                <button class="btn-cerrar-modal" onclick="cerrarModal()">✕ Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========================================================
+    // CONFIGURACIÓN
+    // ========================================================
+    const USUARIO_ADMIN = 'admin';
+    const CLAVE_ADMIN = '1234';
+
+    let usuarioActual = null;
+    let esAdmin = false;
+    let favoritos = JSON.parse(localStorage.getItem('favoritos')) || [];
+    let panelActual = 'panelLibros';
+
+    // ========================================================
+    // BASE DE DATOS OFFLINE (IndexedDB)
+    // ========================================================
+    const DB_NAME = 'TripodeCatalog';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'libros';
+    let db = null;
+
+    function abrirBaseDeDatos() {
+        return new Promise((resolve, reject) => {
+            try {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('titulo', 'titulo', { unique: false });
+                        store.createIndex('autor', 'autor', { unique: false });
+                    }
+                };
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log('✅ IndexedDB abierta correctamente');
+                    resolve(db);
+                };
+                request.onerror = (event) => {
+                    console.error('❌ Error al abrir IndexedDB:', event.target.error);
+                    reject(event.target.error);
+                };
+            } catch (error) {
+                console.error('❌ Excepción al abrir IndexedDB:', error);
+                reject(error);
+            }
+        });
+    }
+
+    // ========================================================
+    // CRUD
+    // ========================================================
+    function agregarLibro(libro) {
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.add(libro);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = (e) => reject(e);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    function obtenerTodosLosLibros() {
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = (e) => reject(e);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    function actualizarLibro(id, datos) {
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put({ ...datos, id });
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = (e) => reject(e);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    function eliminarLibro(id) {
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    function limpiarBaseDeDatos() {
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    // ========================================================
+    // IMÁGENES
+    // ========================================================
+    function convertirImagenABase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ========================================================
+    // DATOS DEL CATÁLOGO (todos los libros del Excel)
+    // ========================================================
+    const librosCatalogoCompleto = [
+        // Colección TRÍPODE
+        { titulo: 'Los Cursillos de Cristiandad en Venezuela', autor: 'A. Calvo', reseña: 'Historia y desarrollo del MCC en Venezuela.', precio: 0, unidades: 0 },
+        { titulo: '¿El amor en quiebra?', autor: 'P. Cesareo Gil Atrio', reseña: 'Reflexión sobre las crisis del amor conyugal y familiar.', precio: 5, unidades: 0 },
+        { titulo: 'El mes de Mayo en familia', autor: 'P. Cesareo Gil Atrio', reseña: 'Vivencia familiar del mes mariano con oraciones y dinámicas.', precio: 5, unidades: 0 },
+        { titulo: 'Haced esto en memoria mía', autor: 'Mons. J. Medina Estévez', reseña: 'Explicación profunda sobre la Eucaristía.', precio: 1, unidades: 0 },
+        { titulo: 'Mi tía evangélica', autor: 'Edwing Jiménez', reseña: 'Diálogo ecuménico desde la experiencia familiar.', precio: 10, unidades: 0 },
+        { titulo: 'Los Obreros del Evangelio', autor: 'P. R. Sánchez Chamoso', reseña: 'Reflexión pastoral sobre el servicio del Reino.', precio: 10, unidades: 0 },
+
+        // Colección ULTREYA
+        { titulo: 'Caminos para la Vida', autor: 'P. Cesareo Gil Atrio', reseña: 'Guía espiritual para el camino de la fe.', precio: 6, unidades: 0 },
+        { titulo: 'Un Elemento de la Pastoral', autor: 'P. Cesareo Gil Atrio', reseña: 'Reflexión sobre elementos clave de la pastoral.', precio: 3, unidades: 0 },
+        { titulo: 'La Confirmación', autor: 'J. Medina Estévez', reseña: 'Guía sobre el sacramento de la Confirmación.', precio: 3, unidades: 0 },
+        { titulo: 'De cara a un desafío', autor: 'G. Tobar Loyola', reseña: 'Reflexión sobre los retos personales y sociales.', precio: 3, unidades: 0 },
+        { titulo: 'En la corriente del Evangelio', autor: 'B. Escafre', reseña: 'Lectura litúrgica y pastoral del Evangelio de Juan.', precio: 3, unidades: 0 },
+        { titulo: 'La Eucaristía, el Sacramento de la Fe', autor: 'P. Carlos Vítolo', reseña: 'Profundización en el misterio eucarístico.', precio: 5, unidades: 0 },
+        { titulo: 'Liderazgo Cristiano Nueva Sociedad', autor: 'P. Carlos Vitolo', reseña: 'Reflexión sobre el liderazgo desde la fe.', precio: 5, unidades: 0 },
+        { titulo: 'La Iglesia en Venezuela se renueva', autor: 'Mons. Ramón Viloria', reseña: 'Visión pastoral de la renovación eclesial en Venezuela.', precio: 2, unidades: 0 },
+        { titulo: 'La Fe y el Crecimiento Apostólico', autor: 'P. Salvador Espinosa', reseña: 'La fe como impulso para el compromiso misionero.', precio: 2, unidades: 0 },
+        { titulo: 'Hemos Creído en el Amor', autor: 'P. Christian Díaz Y.', reseña: 'Invitación a vivir la fe desde el amor.', precio: 3, unidades: 0 },
+        { titulo: 'El Perdón Sana', autor: 'P. Ángel Yván Rodríguez', reseña: 'Reflexión sobre el poder sanador del perdón.', precio: 10, unidades: 0 },
+
+        // Colección IGLESIA Y SOCIEDAD
+        { titulo: 'La novedad del Bautismo', autor: 'M. Gutiérrez', reseña: 'Redescubrir el bautismo como fuente de vida nueva.', precio: 2, unidades: 0 },
+        { titulo: 'Evangelio Popular', autor: 'J. Mosca', reseña: 'Evangelio diario con reflexiones para el pueblo.', precio: 3, unidades: 0 },
+        { titulo: 'La Iglesia: una realidad y un misterio', autor: 'P. H. Castaño', reseña: 'Reflexión eclesiológica para la formación.', precio: 3, unidades: 0 },
+        { titulo: 'Evangelización de la cultura', autor: 'P. H. Castaño', reseña: 'Diálogo entre fe y cultura en América Latina.', precio: 3, unidades: 0 },
+        { titulo: 'Evangelizar hoy. Ciclo "B"', autor: 'G. Santos', reseña: 'Reflexión sobre la evangelización en el contexto actual.', precio: 3, unidades: 0 },
+        { titulo: 'Solidarios con Venezuela', autor: 'SPEV', reseña: 'Llamado a la solidaridad desde la fe.', precio: 3, unidades: 0 },
+        { titulo: 'Yo, Maestro', autor: 'C. Vidaurre', reseña: 'Reflexión sobre la vocación docente y el servicio.', precio: 6, unidades: 0 },
+        { titulo: 'Evangelizar Hoy. Tomo IV', autor: 'G. Santos', reseña: 'Continuación de la reflexión evangelizadora.', precio: 3, unidades: 0 },
+        { titulo: 'Juan Pablo II, Apóstol de la Nva. Evangelización', autor: 'A. Viso', reseña: 'Vida y legado de Juan Pablo II como evangelizador.', precio: 3, unidades: 0 },
+        { titulo: 'Tiempo y Eternidad', autor: 'R. M. de Balbín', reseña: 'Reflexión bíblica sobre el tiempo y la eternidad.', precio: 3, unidades: 0 },
+        { titulo: 'Diccionario del Apocalipsis', autor: 'Agustín Augustinovich', reseña: 'Definiciones de los símbolos del Apocalipsis.', precio: 3, unidades: 0 },
+        { titulo: 'Pastoral Social. Pastoral de la Caridad', autor: 'J. Miró', reseña: 'La caridad como eje de la acción pastoral.', precio: 3, unidades: 0 },
+        { titulo: 'La Ley de la Iglesia', autor: 'L. Alessio', reseña: 'Comentario al derecho litúrgico del Código de Derecho Canónico.', precio: 3, unidades: 0 },
+        { titulo: 'Proyecto de Vida', autor: 'C. Vidaurre', reseña: 'Guía para construir un proyecto de vida con sentido cristiano.', precio: 8, unidades: 0 },
+        { titulo: 'La magia de Administrar su Hogar', autor: 'J. de Urbanc', reseña: 'Consejos prácticos para la administración del hogar.', precio: 3, unidades: 0 },
+        { titulo: 'Configurados a Cristo Sacerdote', autor: 'Mons. Mario Moronta', reseña: 'Reflexión sobre la identidad sacerdotal.', precio: 3, unidades: 0 },
+        { titulo: 'Matrimonio y Amor (2da. Edición)', autor: 'D. Contreras', reseña: 'Guía pastoral sobre el matrimonio cristiano.', precio: 10, unidades: 0 },
+        { titulo: 'Evangelizar en una nueva época', autor: 'J.L. Azuaje', reseña: 'Reflexión sobre la evangelización en el contexto actual.', precio: 3, unidades: 0 },
+        { titulo: 'La Felicidad en el Hogar', autor: 'C. Vidaurre', reseña: 'Claves para cultivar la armonía familiar.', precio: 8, unidades: 0 },
+        { titulo: 'Compañeros de Camino (Vol. III)', autor: 'CEV', reseña: 'Reflexiones pastorales para el caminar del pueblo.', precio: 2, unidades: 0 },
+        { titulo: 'La Iglesia Sacr. Unificación Universal', autor: 'Mons. O. Pérez M.', reseña: 'Reflexión teológica sobre la Iglesia como sacramento de unidad.', precio: 5, unidades: 0 },
+        { titulo: 'La Iglesia, Discípula Misionera', autor: 'Mons. Ramón Viloria', reseña: 'La Iglesia como comunidad en salida misionera.', precio: 5, unidades: 0 },
+        { titulo: 'Discípulos Misioneros, Voc. y Esp.', autor: 'O. Rodríguez', reseña: 'Reflexión sobre la vocación y espiritualidad del discípulo misionero.', precio: 5, unidades: 0 },
+        { titulo: 'Afirmación frente al Marxismo', autor: 'Luis A. Machado', reseña: 'Defensa de la visión cristiana frente al marxismo.', precio: 5, unidades: 0 },
+        { titulo: 'Evangelizadores del Reino', autor: 'Mons. Ovidio Pérez M.', reseña: 'Reflexión sobre la evangelización como tarea esencial del cristiano.', precio: 5, unidades: 0 },
+        { titulo: 'De La Venezuela Real a la Posible', autor: 'Mons. Ovidio Pérez M.', reseña: 'Propuesta pastoral para construir una Venezuela más justa.', precio: 5, unidades: 0 },
+
+        // Colección PREMIOS TRÍPODE - Sacerdotes
+        { titulo: 'El Hombre, sus valores y Venezuela hoy', autor: 'S. de Espinosa', reseña: 'Reflexión sobre los valores y el compromiso social en Venezuela.', precio: 3, unidades: 0 },
+        { titulo: 'Ayer y hoy de la Doctr. Social de la Iglesia', autor: 'J. Ganuza', reseña: 'Evolución del pensamiento social cristiano.', precio: 3, unidades: 0 },
+        { titulo: 'Capitalismo, socialismo y cooperativismo en la Doctrina Social de la Iglesia', autor: 'J. Miró', reseña: 'Análisis de los sistemas económicos desde la Doctrina Social.', precio: 3, unidades: 0 },
+        { titulo: 'La Imagen de Madre en la Biblia', autor: 'A. Augustinovich', reseña: 'Reflexión sobre la figura materna en la Escritura.', precio: 3, unidades: 0 },
+        { titulo: 'La Mujer o el hilo oculto de la historia', autor: 'P. Da Costa Gómez', reseña: 'Papel de la mujer en la historia desde una perspectiva cristiana.', precio: 3, unidades: 0 },
+        { titulo: 'Al servicio de los Pobres', autor: 'C. Romero', reseña: 'Reflexión sobre la opción preferencial por los pobres.', precio: 3, unidades: 0 },
+        { titulo: 'La esclavitud de la pobreza', autor: 'O. Ossa A.', reseña: 'Reflexión crítica sobre la pobreza como realidad estructural.', precio: 3, unidades: 0 },
+        { titulo: 'El rostro histórico, el rostro humano, el rostro divino de Jesucristo', autor: 'P. Da Costa Gómez', reseña: 'Meditación sobre la identidad de Jesucristo.', precio: 3, unidades: 0 },
+        { titulo: 'Mundo con Espíritu', autor: 'Román Sánchez Chamoso', reseña: 'Presencia del Espíritu Santo en la historia y la cultura.', precio: 3, unidades: 0 },
+        { titulo: 'El Reino de Dios', autor: 'P. Da Costa Gómez', reseña: 'Invitación a vivir bajo el señorío de Cristo.', precio: 3, unidades: 0 },
+        { titulo: 'Utopía humana y esperanza cristiana', autor: 'M. Díaz Á.', reseña: 'Diálogo entre la utopía humana y la esperanza cristiana.', precio: 3, unidades: 0 },
+        { titulo: 'Laicos santos en medio del pueblo', autor: 'A. Gracia', reseña: 'Testimonios de laicos santos en América Latina.', precio: 3, unidades: 0 },
+        { titulo: 'Vocación Cristiana y Liderazgo', autor: 'P. Roman Sánchez Ch.', reseña: 'Reflexión sobre la vocación y el liderazgo cristiano.', precio: 3, unidades: 0 },
+        { titulo: 'El Milagro del Barro', autor: 'P. Román Sánchez Chamoso', reseña: 'Reflexión espiritual sobre la fragilidad humana y la acción de Dios.', precio: 3, unidades: 0 },
+        { titulo: 'La Trinidad y La Familia', autor: 'P. Román Sánchez Chamoso', reseña: 'Vínculo entre el misterio trinitario y la vida familiar.', precio: 8, unidades: 0 },
+
+        // Colección PREMIOS TRÍPODE - Laicos
+        { titulo: 'Cuando yo sea grande', autor: 'J. y L. Salcedo', reseña: 'Reflexión sobre los sueños, la infancia y el futuro.', precio: 3, unidades: 0 },
+        { titulo: 'La democracia venezolana en terapia intensiva', autor: 'A. Viso', reseña: 'Análisis crítico de la democracia venezolana.', precio: 3, unidades: 0 },
+        { titulo: 'Nuestra Realidad', autor: 'M. de Carrión', reseña: 'Mirada a la vida cotidiana desde la fe y la esperanza.', precio: 3, unidades: 0 },
+        { titulo: 'Liberalismo, Socialismo y Doct. Social de la Iglesia', autor: 'A. Napolitano', reseña: 'Análisis ideológico desde la Doctrina Social.', precio: 3, unidades: 0 },
+        { titulo: 'La Doct. Social de la Iglesia, un compromiso para el laico', autor: 'E. Isava', reseña: 'La Doctrina Social como herramienta para la acción del laico.', precio: 3, unidades: 0 },
+        { titulo: 'El camino de Emaús, vigente en América', autor: 'M. de Carrión', reseña: 'Evangelización encarnada en la realidad latinoamericana.', precio: 3, unidades: 0 },
+        { titulo: 'Buscando la Identidad de la mujer', autor: 'M. de Carrión', reseña: 'Reflexión sobre el papel de la mujer en la sociedad y la fe.', precio: 3, unidades: 0 },
+        { titulo: 'Jesús entre nosotros', autor: 'J. Puigbó', reseña: 'Propuesta catequética sobre la presencia de Jesús en lo cotidiano.', precio: 3, unidades: 0 },
+        { titulo: 'Más allá de una oración', autor: 'T. Alzuru', reseña: 'La oración como encuentro profundo con Dios.', precio: 8, unidades: 0 },
+        { titulo: 'Espero la vida del mundo futuro', autor: 'I. Vidal de Tenreiro', reseña: 'Contemplación sobre la promesa de la vida eterna.', precio: 3, unidades: 0 },
+        { titulo: '¿Una propuesta indecente?', autor: 'A. Ramírez', reseña: 'Reflexión sobre el concepto de santidad.', precio: 4, unidades: 0 },
+        { titulo: '¿Cuándo aprenderemos a ser hnos?', autor: 'V. Pérez', reseña: 'Reflexión sobre la fraternidad como tarea urgente.', precio: 4, unidades: 0 },
+        { titulo: 'Cristo, familia y vida', autor: 'H. González H.', reseña: 'Reflexión pastoral sobre la familia y la vida en Cristo.', precio: 4, unidades: 0 },
+        { titulo: '¿Cómo quieres que lo haga?', autor: 'G. Rojas', reseña: 'Diálogo con Dios desde lo cotidiano.', precio: 4, unidades: 0 },
+        { titulo: 'El amor de Cristo nos apremia', autor: 'G. Rojas', reseña: 'Meditación sobre el amor redentor de Cristo.', precio: 4, unidades: 0 },
+        { titulo: 'Caminando hacia la paz', autor: 'A. García', reseña: 'Recorrido espiritual hacia la reconciliación.', precio: 4, unidades: 0 },
+        { titulo: 'Los Medios de Comunicación ante el valor de la Fidelidad', autor: 'P. Aguilera', reseña: 'Reflexión sobre el papel de los medios en la formación de valores.', precio: 4, unidades: 0 },
+        { titulo: 'La Alegría de Ser y Hacer Familia', autor: 'Eva y Raúl Acosta', reseña: 'Celebración de la vocación familiar como fuente de plenitud.', precio: 8, unidades: 0 },
+
+        // Colección CELAM
+        { titulo: 'Documento de Aparecida', autor: 'CELAM', reseña: 'Llamado a renovar la fe desde el corazón del continente.', precio: 4, unidades: 0 },
+        { titulo: 'La Misión Continental', autor: 'CEV', reseña: 'La misión como eje de la pastoral latinoamericana.', precio: 0, unidades: 0 },
+
+        // Colección TRÍPODE DE BOLSILLO
+        { titulo: 'Guía del Peregrino (Libro de Preces)', autor: '—', reseña: 'Libro de oraciones para el peregrino.', precio: 9, unidades: 0 },
+        { titulo: 'Parada en ruta', autor: 'P. Cesareo Gil Atrio', reseña: 'Un alto en el camino para escuchar a Dios.', precio: 5, unidades: 0 },
+        { titulo: 'Dios y los hombres son cercanos', autor: 'P. Cesareo Gil Atrio', reseña: 'Meditación sobre la cercanía divina en la vida cotidiana.', precio: 5, unidades: 0 },
+        { titulo: 'Un Minuto de Reflexión', autor: 'P. Ángel Yván Rodríguez', reseña: 'Frases breves que tocan el alma.', precio: 5, unidades: 0 },
+        { titulo: 'Pensamientos Juan XXIII', autor: 'P. Ángel Yván Rodríguez', reseña: 'Palabras de sabiduría del Papa Juan XXIII.', precio: 5, unidades: 0 },
+        { titulo: 'Pensamientos Juan Pablo II', autor: 'P. Ángel Yván Rodríguez', reseña: 'Frases inspiradoras de San Juan Pablo II.', precio: 5, unidades: 0 },
+
+        // Colección DOCUMENTOS PONTIFICIOS
+        { titulo: 'Carta de los derechos de la familia', autor: 'Santa Sede', reseña: 'Documento de la Santa Sede sobre los derechos de la familia.', precio: 0.5, unidades: 0 },
+        { titulo: 'Orientaciones educativas sobre el amor humano', autor: 'Juan Pablo II', reseña: 'Orientaciones para la educación del amor humano.', precio: 0.5, unidades: 0 },
+        { titulo: 'Los institutos seculares', autor: 'CDF', reseña: 'Documento de la Congregación para la Doctrina de la Fe.', precio: 0.5, unidades: 0 },
+        { titulo: 'Exhortación sobre Reconciliación y Penitencia', autor: 'Juan Pablo II', reseña: 'Llamado a vivir la reconciliación y la penitencia.', precio: 1, unidades: 0 },
+        { titulo: 'Carta sobre la atención a las pers. homosex.', autor: 'CDF', reseña: 'Documento de la Congregación para la Doctrina de la Fe.', precio: 0.5, unidades: 0 },
+        { titulo: 'Dimensión religiosa de la Educación en la Escuela Católica', autor: 'Cong. para la educación católica', reseña: 'Orientaciones para la educación religiosa en la escuela católica.', precio: 0.5, unidades: 0 },
+        { titulo: 'Los Religiosos en el Año Mariano', autor: 'Juan Pablo II', reseña: 'Carta de Juan Pablo II a los religiosos en el Año Mariano.', precio: 0.5, unidades: 0 },
+        { titulo: 'Christifideles Laici (Laicos en la Iglesia y en el Mundo)', autor: 'Juan Pablo II', reseña: 'Exhortación apostólica sobre la vocación y misión de los laicos.', precio: 2, unidades: 0 },
+        { titulo: 'Carta sobre algunos aspectos de la meditación cristiana', autor: 'CDF', reseña: 'Orientaciones para la meditación cristiana.', precio: 0.5, unidades: 0 },
+        { titulo: 'El Esplendor de la Verdad (Veritatis Splendor)', autor: 'Juan Pablo II', reseña: 'Encíclica sobre los fundamentos de la moral cristiana.', precio: 0.5, unidades: 0 },
+        { titulo: 'Veritatis Splendor, Comentarios', autor: '—', reseña: 'Comentarios a la encíclica Veritatis Splendor.', precio: 1, unidades: 0 },
+        { titulo: 'Doc. Sinodales y Exhortación Post-Sinodales', autor: '—', reseña: 'Recopilación de documentos sinodales.', precio: 2, unidades: 0 },
+        { titulo: 'Carta Apostólica sobre la Ordenación reservada a los hombres', autor: 'Juan Pablo II', reseña: 'Documento sobre la ordenación sacerdotal.', precio: 1, unidades: 0 },
+        { titulo: 'Evangelio de la Vida (Evangelium Vitae)', autor: 'Juan Pablo II', reseña: 'Encíclica sobre el valor y la inviolabilidad de la vida humana.', precio: 1, unidades: 0 },
+        { titulo: 'Empeño Ecuménico', autor: 'Juan Pablo II', reseña: 'Reflexión sobre el ecumenismo.', precio: 1, unidades: 0 },
+        { titulo: 'Evangelium Vitae. Comentarios', autor: '—', reseña: 'Comentarios a la encíclica Evangelium Vitae.', precio: 1, unidades: 0 },
+        { titulo: 'Preparación al Sacramento del Matrimonio', autor: 'Juan Pablo II', reseña: 'Orientaciones para la preparación al matrimonio.', precio: 1, unidades: 0 },
+        { titulo: 'Vademecum para los confesores s/algunos temas de moral conyugal', autor: '—', reseña: 'Guía para confesores sobre temas de moral conyugal.', precio: 1, unidades: 0 },
+        { titulo: 'Juan Pablo II y la redención', autor: 'Juan Pablo II', reseña: 'Recopilación de textos sobre la redención.', precio: 2, unidades: 0 },
+        { titulo: 'Juan Pablo II y la cuestión social', autor: 'Juan Pablo II', reseña: 'Recopilación de encíclicas sociales de Juan Pablo II.', precio: 2, unidades: 0 },
+        { titulo: 'Inst. sobre algunas cuestiones acerca de la colab. de los fieles laicos...', autor: '—', reseña: 'Instrucción sobre la colaboración de los laicos.', precio: 1, unidades: 0 },
+        { titulo: 'Apostolos suos', autor: 'Juan Pablo II', reseña: 'Carta apostólica sobre la misión de los obispos.', precio: 1, unidades: 0 },
+        { titulo: 'La Iglesia en América (Ecclesia in America)', autor: 'Juan Pablo II', reseña: 'Exhortación apostólica sobre la Iglesia en América.', precio: 1, unidades: 0 },
+        { titulo: 'La Iglesia y la cuestión familiar', autor: '—', reseña: 'Reflexión sobre el compromiso pastoral con las familias.', precio: 3, unidades: 0 },
+        { titulo: 'Directorio sobre la Piedad Popular y la Liturgia', autor: '—', reseña: 'Directorio para integrar la piedad popular con la liturgia.', precio: 3, unidades: 0 },
+        { titulo: 'Rosarium Virginis Mariae (Carta Apostólica)', autor: '—', reseña: 'Carta apostólica sobre el Rosario.', precio: 3, unidades: 0 },
+        { titulo: 'Ecclesia Eucaristía (Carta Encícl.)', autor: 'Juan Pablo II', reseña: 'Encíclica sobre la Eucaristía.', precio: 3, unidades: 0 },
+        { titulo: 'Jesucristo, portador del agua de la vida', autor: '—', reseña: 'Reflexión cristiana sobre el movimiento de la Nueva Era.', precio: 3, unidades: 0 },
+        { titulo: 'Pastores Gregis (Exhort. Apost. Postsinodal)', autor: '—', reseña: 'Exhortación apostólica sobre el ministerio pastoral de los obispos.', precio: 3, unidades: 0 },
+        { titulo: 'Sacramento de la Redención', autor: 'Juan Pablo II', reseña: 'Documento sobre la Eucaristía.', precio: 3, unidades: 0 },
+        { titulo: 'Carta a los Obispos de la IC sobre la colaboración del hombre y la mujer...', autor: '—', reseña: 'Carta sobre la colaboración del hombre y la mujer en la Iglesia.', precio: 1, unidades: 0 },
+        { titulo: 'Quedate Con Nosotros Señor (Carta Apost.)', autor: 'Juan Pablo II', reseña: 'Carta apostólica para el Año de la Eucaristía.', precio: 3, unidades: 0 },
+        { titulo: 'Dios es Amor (Encíclica Deus Caritas Est)', autor: 'Benedicto XVI', reseña: 'Primera encíclica de Benedicto XVI sobre el amor cristiano.', precio: 3, unidades: 0 },
+        { titulo: 'Sacramento de la Caridad', autor: 'Benedicto XVI', reseña: 'Exhortación apostólica sobre la Eucaristía.', precio: 3, unidades: 0 },
+        { titulo: 'Salvados por la esperanza (Spes Salvi)', autor: 'Benedicto XVI', reseña: 'Encíclica sobre la esperanza cristiana.', precio: 3, unidades: 0 },
+        { titulo: 'La Dignidad de Persona (Dignitatis Personae)', autor: '—', reseña: 'Instrucción sobre la dignidad de la persona humana.', precio: 3, unidades: 0 },
+        { titulo: 'La Caridad en la Verdad (Caritas in Veritate)', autor: 'Benedicto XVI', reseña: 'Encíclica sobre el desarrollo humano integral.', precio: 3, unidades: 0 },
+        { titulo: 'La Palabra del Señor (Verbum Domini)', autor: 'Benedicto XVI', reseña: 'Exhortación apostólica sobre la Palabra de Dios.', precio: 3, unidades: 0 },
+        { titulo: 'Carta al Presidente Pontificia Comisión para AL', autor: '—', reseña: 'Carta del Papa a la Comisión para América Latina.', precio: 1, unidades: 0 },
+        { titulo: 'Carta Apostólica Misericordia et Misere', autor: '—', reseña: 'Carta apostólica sobre la misericordia.', precio: 1, unidades: 0 },
+        { titulo: 'Exhortación Apostólica Alegraos y Regocijaos (Gaudete et Exsultate)', autor: 'Papa Francisco', reseña: 'Exhortación sobre la santidad en el mundo actual.', precio: 5, unidades: 0 },
+        { titulo: 'Vive Cristo Exhortación Apostólica Post-Sinodal (Christus Vivit)', autor: 'S.S. Franciscus', reseña: 'Exhortación apostólica para los jóvenes.', precio: 5, unidades: 0 },
+
+        // Colección FOLLETOS TRÍPODE
+        { titulo: 'Centenario del inicio formal de la E.S.I.', autor: 'A. Viso', reseña: 'Reflexión sobre el centenario de la Doctrina Social de la Iglesia.', precio: 0.5, unidades: 0 },
+        { titulo: 'Hacia la nueva evangelización de la cultura', autor: 'MCC', reseña: 'Reflexión sobre la evangelización de la cultura.', precio: 0.5, unidades: 0 },
+        { titulo: 'Novena Vocacional', autor: 'S. de Espinosa', reseña: 'Novena para la vocación cristiana.', precio: 0.5, unidades: 0 },
+        { titulo: 'Comunión para la Misión', autor: 'Mons. O. Pérez Morales', reseña: 'Reflexión sobre la comunión como fundamento de la misión.', precio: 0.5, unidades: 0 },
+
+        // Colección PENSANDO EN TÍ, MAMÁ
+        { titulo: 'La Madre, testigo de misericordia', autor: 'AA.VV', reseña: 'Reflexiones sobre la Virgen María como testigo de misericordia.', precio: 2, unidades: 0 },
+        { titulo: 'Muchos rostros, una sola madre', autor: 'AA.VV', reseña: 'Reflexiones sobre la figura materna desde distintas voces cristianas.', precio: 2, unidades: 0 },
+        { titulo: 'Madre, modelo de virtudes', autor: 'AA.VV', reseña: 'Testimonios de madres sobre las virtudes y la educación.', precio: 2, unidades: 0 },
+        { titulo: 'Maestra del Amor de Dios', autor: 'AA.VV', reseña: 'Reflexiones sobre la Virgen María como maestra del amor.', precio: 2, unidades: 0 },
+        { titulo: 'La Alegría de la Virgen Madre', autor: 'AA.VV', reseña: 'Celebración de los gozos de la Virgen María.', precio: 3, unidades: 0 },
+        { titulo: 'La Madre, Fuente de Misericordia', autor: 'AA.VV', reseña: 'Reflexiones sobre la Virgen María como fuente de misericordia.', precio: 3, unidades: 0 },
+
+        // Colección RETIRO A LA SOMBRA
+        { titulo: 'Encuentro de Gracia, Un camino a la libertad', autor: 'L. Fagúndez', reseña: 'Reflexión para quienes están limitados en su movilidad.', precio: 5, unidades: 0 },
+        { titulo: 'Para ti También HAY ESPERANZA', autor: 'A. García', reseña: 'Mensaje de esperanza para momentos difíciles.', precio: 10, unidades: 0 },
+
+        // Colección M. O. BILLINGS
+        { titulo: 'Así enseña Billings', autor: 'E. Paz', reseña: 'Recopilación de enseñanzas del método Billings.', precio: 0.5, unidades: 0 },
+        { titulo: 'Enseñanza del Método de la Ovulación Billings', autor: '—', reseña: 'Guía para el método de ovulación Billings.', precio: 3, unidades: 0 },
+        { titulo: 'Estudios sobre la Reproduc. Humana', autor: 'Billings Vzla', reseña: 'Estudios científicos sobre la reproducción humana.', precio: 3, unidades: 0 },
+
+        // Colección LAUDES, ESTAMPAS, AFICHES
+        { titulo: 'Laudes venezolanos', autor: 'H. Castaño', reseña: 'Oraciones de alabanza desde Venezuela.', precio: 0.5, unidades: 0 },
+        { titulo: 'Alabanzas marianas', autor: 'H. Castaño', reseña: 'Oraciones de alabanza a la Virgen María.', precio: 0.5, unidades: 0 },
+        { titulo: 'Afiches con los mandamientos', autor: '—', reseña: 'Afiches con los diez mandamientos.', precio: 0.25, unidades: 0 },
+        { titulo: 'Preces a la Madre María de San José', autor: '—', reseña: 'Oraciones a la Madre María de San José.', precio: 0.25, unidades: 0 },
+        { titulo: 'Oración de los esposos', autor: 'H. Castaño', reseña: 'Oración para los esposos.', precio: 0.5, unidades: 0 },
+        { titulo: 'Calcomanías MCC - Color Amarillo', autor: '—', reseña: 'Calcomanías del Movimiento de Cursillos.', precio: 1.5, unidades: 0 },
+        { titulo: 'Invocación del Espíritu Santo', autor: '—', reseña: 'Oración de invocación al Espíritu Santo.', precio: 0.5, unidades: 0 },
+
+        // Colección FOLLETOS TER
+        { titulo: 'La Calle, Mi Hogar', autor: 'N. Martínez', reseña: 'Testimonio sobre la vida en situación de calle.', precio: 1, unidades: 0 },
+        { titulo: 'Al final de la vida humana', autor: 'P. Ángel Yván Rodríguez', reseña: 'Reflexión sobre el misterio de la muerte desde la fe.', precio: 1, unidades: 0 },
+        { titulo: 'Ser Cristiano en la Vzla actual', autor: 'P. Ángel Yván Rodríguez', reseña: 'Reflexión sobre la fe en la Venezuela actual.', precio: 3, unidades: 0 },
+
+        // Colección EVANGELIZADORES DE AMÉRICA
+        { titulo: 'La vida maravillosa de san Luis Bertrán', autor: 'L. Galmés', reseña: 'Vida de San Luis Bertrán, evangelizador en América.', precio: 1, unidades: 0 },
+        { titulo: 'Santa Rosa de Lima', autor: 'J. García', reseña: 'Vida de Santa Rosa de Lima, patrona de América.', precio: 1, unidades: 0 },
+        { titulo: 'El Cardenal Quintero', autor: 'C. Maradei', reseña: 'Biografía del Cardenal José Humberto Quintero.', precio: 1, unidades: 0 },
+        { titulo: 'Beato Sebastián de Aparicio', autor: 'C. Gil', reseña: 'Vida del Beato Sebastián de Aparicio.', precio: 1, unidades: 0 },
+        { titulo: 'Fr. Junípero Serra', autor: 'M. Gutiérrez', reseña: 'Vida de Fr. Junípero Serra, evangelizador de California.', precio: 1, unidades: 0 },
+        { titulo: 'Yo, Fr. Juan Macías, Hno. de los Pobres', autor: 'A. Lobato', reseña: 'Vida de Fray Juan Macías, santo dominico en Perú.', precio: 1, unidades: 0 },
+        { titulo: 'San Miguel Febres Cordero, evangelizador de la cultura americana', autor: 'R. Ma. Febres-Cordero', reseña: 'Vida de San Miguel Febres Cordero, educador y escritor.', precio: 1, unidades: 0 },
+        { titulo: 'Los evangelizadores de Venezuela', autor: 'C. Maradei', reseña: 'Perfiles de los evangelizadores de Venezuela.', precio: 1, unidades: 0 },
+        { titulo: 'San Francisco Solano, arpa de América', autor: 'J. García Oro', reseña: 'Vida de San Francisco Solano, misionero franciscano.', precio: 1, unidades: 0 },
+        { titulo: 'Beato Pedro de San José Betancur', autor: 'M. Gutiérrez', reseña: 'Vida del Beato Pedro de San José Betancur, primer santo de Guatemala.', precio: 1, unidades: 0 },
+        { titulo: 'Diez Evangelizadores de Colombia', autor: 'J. Botero R.', reseña: 'Perfiles de los grandes evangelizadores de Colombia.', precio: 1, unidades: 0 },
+        { titulo: 'Fray Martín de Porres', autor: 'J. García', reseña: 'Vida de Fray Martín de Porres, santo peruano.', precio: 1, unidades: 0 },
+        { titulo: 'Un cura, Evangelio viviente, Don Baltasar Pardal', autor: 'A. Augustinovich', reseña: 'Vida de Don Baltasar Pardal, sacerdote gallego.', precio: 1, unidades: 0 },
+        { titulo: 'Prehistoria y Primeros Capítulos de la Evangelización de América', autor: 'J. García Oro', reseña: 'Análisis de la evangelización de América.', precio: 1, unidades: 0 },
+        { titulo: 'P. José de Carabantes', autor: 'M. Gutiérrez', reseña: 'Vida del P. José de Carabantes, evangelizador del oriente venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Id también vosotros a mi viña', autor: 'M. Gutiérrez', reseña: 'Reflexión sobre la vocación bautismal.', precio: 1, unidades: 0 },
+        { titulo: 'Misionero en la Gran Sabana', autor: 'N. de Cármenes', reseña: 'Experiencia pastoral entre los pueblos indígenas del sureste venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'San Pedro Claver', autor: 'J. M. Ganuza', reseña: 'Vida de San Pedro Claver, misionero jesuita.', precio: 1, unidades: 0 },
+        { titulo: 'Del ayer al hoy de la Evangelización', autor: 'Card. B. Porras', reseña: 'Reflexión sobre el camino de la Iglesia en su misión evangelizadora.', precio: 1, unidades: 0 },
+        { titulo: 'San Roque González', autor: 'J. M. Ganuza', reseña: 'Vida de San Roque González, misionero jesuita en Paraguay.', precio: 1, unidades: 0 },
+        { titulo: '40 años entre los Pemones', autor: 'E. de Villarín', reseña: 'Testimonio misionero entre los indígenas pemones.', precio: 1, unidades: 0 },
+        { titulo: 'Beato José Anchieta', autor: 'J. M. Ganuza', reseña: 'Vida de José de Anchieta, misionero jesuita en Brasil.', precio: 1, unidades: 0 },
+        { titulo: 'Teresa de Los Andes', autor: 'A. Viso', reseña: 'Vida de Santa Teresa de los Andes, carmelita chilena.', precio: 1, unidades: 0 },
+        { titulo: 'Padre Andújar', autor: 'M. Díaz', reseña: 'Vida del Padre José Antonio de Andújar, maestro del Libertador.', precio: 1, unidades: 0 },
+        { titulo: 'Todavía en los Comienzos', autor: 'M. Gutiérrez', reseña: 'Reflexión sobre la misión evangelizadora como tarea permanente.', precio: 1, unidades: 0 },
+        { titulo: 'Montesino', autor: 'V. Pérez', reseña: 'Vida de Fray Antonio de Montesinos, defensor de los indígenas.', precio: 1, unidades: 0 },
+        { titulo: 'Madre María de San José', autor: 'V. Pérez', reseña: 'Vida de la Beata María de San José, fundadora de las Agustinas Recoletas.', precio: 1, unidades: 0 },
+        { titulo: 'Madre Isabel, una Mujer', autor: 'A. Setien Peña', reseña: 'Vida de la Madre Isabel de la Santísima Trinidad.', precio: 1, unidades: 0 },
+        { titulo: 'Madre Candelaria de San José (2a Edic.)', autor: 'V. Pérez', reseña: 'Vida de la Beata Madre Candelaria de San José.', precio: 1, unidades: 0 },
+        { titulo: 'Mons. Salvador Montes de Oca', autor: 'L. Verdecchia', reseña: 'Vida de Mons. Salvador Montes de Oca, mártir venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Madre Emilia de San José', autor: 'V. Pérez', reseña: 'Vida de la Venerable Madre Emilia de San José.', precio: 1, unidades: 0 },
+        { titulo: 'Evangelizador de dos mundos: San Antonio María Claret', autor: 'A. Cabré', reseña: 'Vida de San Antonio María Claret, fundador de los Claretianos.', precio: 1, unidades: 0 },
+
+        // Colección SIGNOS DE VIDA
+        { titulo: 'El Bautismo a la luz del C. Vat II', autor: 'N. Martínez Rust', reseña: 'Reflexión sobre el Bautismo después del Concilio Vaticano II.', precio: 1, unidades: 0 },
+        { titulo: 'El Misterio Pascual', autor: 'O. Santagada', reseña: 'Reflexión sobre el misterio pascual de Cristo.', precio: 1, unidades: 0 },
+        { titulo: 'La Gracia y su acción en los sacramentos', autor: 'N. Martínez Rust', reseña: 'Reflexión sobre la gracia en los sacramentos.', precio: 1, unidades: 0 },
+        { titulo: 'La Eucaristía hace la Iglesia', autor: 'Mons. M. Moronta', reseña: 'Reflexión sobre el vínculo entre la Eucaristía y la Iglesia.', precio: 2, unidades: 0 },
+        { titulo: 'La Herencia de nuestra fe', autor: 'P. Ángel Yván Rodríguez', reseña: 'Historia de los pioneros del movimiento adventista.', precio: 4, unidades: 0 },
+
+        // Colección MODELOS VENEZOLANOS DE VIDA CRISTIANA
+        { titulo: 'José Gregorio Hernández', autor: 'M. Yaber', reseña: 'Vida del Dr. José Gregorio Hernández, médico de los pobres.', precio: 0, unidades: 0 },
+        { titulo: 'Cecilio Acosta', autor: 'W. Pérez', reseña: 'Vida de Cecilio Acosta, intelectual venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Juan Vicente González', autor: 'E. de Vera', reseña: 'Vida de Juan Vicente González, escritor y político venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Don Tulio Febres Cordero', autor: 'C. Maradei', reseña: 'Vida de Don Tulio Febres Cordero, intelectual merideño.', precio: 1, unidades: 0 },
+        { titulo: 'Retazos. Mario Briceño-Iragorry', autor: 'B. Briceño Picón', reseña: 'Vida de Mario Briceño-Iragorry, intelectual venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'J. M. Núñez Ponte, Doctor y Guía de Generaciones', autor: 'L. Poleo', reseña: 'Vida de J. M. Núñez Ponte, educador y académico.', precio: 1, unidades: 0 },
+        { titulo: 'Néstor Luis Pérez', autor: 'N. Andrade Labarca', reseña: 'Vida de Néstor Luis Pérez, jurista y político venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Jacobo Dib Haje', autor: 'P. J. Dib Espejo', reseña: 'Vida de Jacobo Dib Haje, médico y filántropo venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Rafael María Baralt', autor: 'A. Romero', reseña: 'Vida de Rafael María Baralt, historiador y periodista venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Conversaciones con un joven que fue sabio: Caracciolo Parra', autor: 'T. Polanco A.', reseña: 'Semblanza de Caracciolo Parra, jurista y académico.', precio: 1, unidades: 0 },
+        { titulo: 'El Dr. José María Vargas', autor: 'M. Yáber', reseña: 'Vida de José María Vargas, médico, educador y presidente venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Felipe Larrazábal', autor: 'M. Cardozo', reseña: 'Vida de Felipe Larrazábal, militar y político venezolano.', precio: 1, unidades: 0 },
+        { titulo: 'Luisa Cáceres de Arismendi', autor: 'B. Mata', reseña: 'Vida de Luisa Cáceres de Arismendi, heroína de la independencia.', precio: 1, unidades: 0 },
+        { titulo: 'Juan Germán Roscio', autor: 'M. Cardozo', reseña: 'Vida de Juan Germán Roscio, ideólogo de la independencia venezolana.', precio: 1, unidades: 0 },
+        { titulo: 'José Gregorio Hernández, hombre de Dios', autor: 'M. Yaber', reseña: 'Vida del Dr. José Gregorio Hernández, médico de los pobres.', precio: 5, unidades: 0 },
+
+        // Colección M.C.C.
+        { titulo: 'El Cómo y el Porqué', autor: 'AA.VV.', reseña: 'Explicación del método y espiritualidad del MCC.', precio: 2, unidades: 0 },
+        { titulo: 'Interrogantes y Problemas de los C.C', autor: 'J. Hervás', reseña: 'Respuesta a interrogantes sobre los Cursillos.', precio: 2, unidades: 0 },
+        { titulo: 'Los Cursillos se ponen al día IV Enc. Mundial', autor: 'AA.VV.', reseña: 'Documentos del IV Encuentro Mundial de Cursillos.', precio: 1, unidades: 0 },
+        { titulo: 'El Cursillo de Cristiandad, Rollos y Meditaciones', autor: 'AA.VV.', reseña: 'Recopilación de los rollos y meditaciones fundamentales del MCC.', precio: 10, unidades: 0 },
+        { titulo: 'El Cursillo y el poscursillo', autor: 'J. Domínguez, P. Cesareo Gil Atrio', reseña: 'Reflexión sobre la experiencia del cursillo y el poscursillo.', precio: 5, unidades: 0 },
+        { titulo: 'La religiosidad popular en América Latina', autor: 'P. R. Viloria Pinzón', reseña: 'Análisis de la religiosidad popular en América Latina.', precio: 0.5, unidades: 0 },
+        { titulo: 'El Movimiento de Cursillos de Cristiandad', autor: 'P. Cesareo Gil', reseña: 'Historia y espiritualidad del MCC.', precio: 5, unidades: 0 },
+        { titulo: 'La Amistad y los Cursillos de Cristiandad', autor: 'H. Castaño', reseña: 'Reflexión sobre la amistad en el MCC.', precio: 5, unidades: 0 },
+        { titulo: 'El hombre de hoy y sus circunstancias en América Latina', autor: 'Mons. R. Viloria', reseña: 'Análisis pastoral de la realidad latinoamericana.', precio: 0.5, unidades: 0 },
+        { titulo: 'Enc. T. Latinoamericanos y Mundiales del MCC', autor: 'AA.VV.', reseña: 'Documentos de encuentros latinoamericanos y mundiales del MCC.', precio: 1, unidades: 0 },
+        { titulo: 'IX Encuentro Interamericano del MCC', autor: 'AA.VV.', reseña: 'Documentos del IX Encuentro Interamericano del MCC.', precio: 1, unidades: 0 },
+        { titulo: 'Estat. del Organ. M. y del Grupo Lat. del MCC', autor: 'AA.VV.', reseña: 'Estatutos del MCC y del Grupo Latinoamericano.', precio: 1, unidades: 0 },
+        { titulo: 'Actas de las Asambleas del MCC', autor: 'AA.VV.', reseña: 'Actas de las asambleas del MCC.', precio: 5, unidades: 0 },
+        { titulo: 'Ideas Fundamentales del MCC3', autor: 'AA.VV.', reseña: 'Documento fundamental del MCC.', precio: 10, unidades: 0 },
+        { titulo: 'INTENCIONES PARA LA MISA Y EL ROSARIO', autor: '—', reseña: 'Intenciones para la Misa y el Rosario.', precio: 1, unidades: 0 },
+
+        // Colección CUENTOS TRÍPODE
+        { titulo: 'Recreando la Imaginación', autor: 'P. Ángel Yván Rodríguez', reseña: 'Cuentos para niños inspirados en la sencillez evangélica.', precio: 8, unidades: 0 },
+        { titulo: 'Elisa y sus lentes dorados', autor: 'C. de Franco', reseña: 'Cuentos basados en vivencias, con reflexiones sobre el sufrimiento y la esperanza.', precio: 8, unidades: 0 },
+
+        // Colección CATECISMO
+        { titulo: 'Catecismo de la Iglesia Católica (C.I.C.)', autor: '—', reseña: 'Compendio oficial de la doctrina católica.', precio: 25, unidades: 0 },
+        { titulo: 'Mi Catecismo', autor: 'P. S. Lorenzana', reseña: 'Catecismo para niños en formato de preguntas y respuestas.', precio: 5, unidades: 0 },
+        { titulo: 'Reflexiones sobre el Catecismo', autor: 'C. Gil', reseña: 'Reflexiones para profundizar en el Catecismo de la Iglesia Católica.', precio: 10, unidades: 0 },
+        { titulo: 'Catecismo de la Iglesia Católica, Compendio', autor: '—', reseña: 'Compendio del Catecismo de la Iglesia Católica.', precio: 10, unidades: 0 },
+        { titulo: 'Resumen de la doctrina Cristiana', autor: 'P. A. Diufain M.', reseña: 'Guía de la doctrina cristiana en preguntas y respuestas.', precio: 10, unidades: 0 },
+
+        // Colección CONCILIO PLENARIO DE VENEZUELA
+        { titulo: 'Conociendo nuestro Concilio', autor: 'Mons. R. Biord', reseña: 'Explicación de las ideas-fuerza del Concilio Plenario de Venezuela.', precio: 2, unidades: 0 },
+        { titulo: 'Documentos Conciliares, Introducción General', autor: 'Mons. O. Pérez Morales', reseña: 'Guía para comprender el espíritu del Concilio Vaticano II.', precio: 2, unidades: 0 },
+        { titulo: 'La Proclamac. Profética del Evangelio de Jesucristo en Venezuela', autor: 'P. C. Bazarra', reseña: 'Comentario teológico sobre la proclamación profética del Evangelio.', precio: 2, unidades: 0 },
+        { titulo: 'La Comunión en la vida de la Iglesia en Venezuela', autor: 'P. R. Sánchez Chamoso', reseña: 'Reflexión sobre la comunión eclesial en Venezuela.', precio: 2, unidades: 0 },
+        { titulo: 'La Contribución de la Iglesia a la gestación de una nueva sociedad', autor: 'J.L. Azuaje y E. Monzant', reseña: 'Análisis del papel de la Iglesia en la formación de una nueva sociedad.', precio: 2, unidades: 0 },
+        { titulo: 'Obispos, Presbíteros y Diáconos', autor: 'Mons. O. Pérez Morales', reseña: 'Reflexión sobre el rol de los obispos, presbíteros y diáconos.', precio: 2, unidades: 0 },
+        { titulo: 'Jesucristo buena noticia para los jóvenes', autor: 'D. González', reseña: 'Reflexión sobre Jesucristo como buena noticia para los jóvenes.', precio: 2, unidades: 0 },
+        { titulo: 'Instancias de comunión del pueblo de Dios para la misión', autor: 'Mons. S. Figueroa', reseña: 'Visión pastoral de la Iglesia como comunidad misionera.', precio: 2, unidades: 0 },
+        { titulo: 'Evangelización de la cultura en Vzla', autor: 'Mons. R. Biord', reseña: 'Reflexión sobre la evangelización de la cultura en Venezuela.', precio: 2, unidades: 0 },
+
+        // Colección AMOR, MATRIMONIO Y FAMILIA
+        { titulo: 'La Pareja: Sexualidad y Complementación', autor: 'D. Contreras', reseña: 'Reflexión sobre la sexualidad y la complementariedad en la pareja.', precio: 8, unidades: 0 },
+        { titulo: 'Claves de Una Familia Estable y Feliz', autor: 'Francisco Valery', reseña: 'Consejos prácticos para una familia estable y feliz.', precio: 15, unidades: 0 },
+        { titulo: 'Relaciones Prematrimoniales ¿Por qué no?', autor: 'D. Contreras', reseña: 'Reflexión sobre las relaciones prematrimoniales.', precio: 4, unidades: 0 },
+        { titulo: 'El Aborto, Negación a la vida', autor: 'J. M. Raccamarich', reseña: 'Reflexión sobre el aborto como negación a la vida.', precio: 8, unidades: 0 },
+        { titulo: 'Una Mirada a la Ideología De Género', autor: 'Carlos Yepes', reseña: 'Análisis de la ideología de género desde una perspectiva cristiana.', precio: 10, unidades: 0 },
+
+        // Colección PADRE CESARIO GIL ATRIO
+        { titulo: 'Padre Cesario GIL, Un Operario Incansable', autor: 'P. Angel Rodriguez y P. José G. Hernandez', reseña: 'Biografía del P. Cesáreo Gil Atrio.', precio: 10, unidades: 0 },
+        { titulo: 'Padre Cesareo GIL, Apostol del Laicado', autor: 'Mario Gónzalez C.', reseña: 'Biografía del P. Cesáreo Gil Atrio.', precio: 10, unidades: 0 }
+    ];
+
+    // ========================================================
+    // VOLTEO DE TARJETAS
+    // ========================================================
+    function toggleVolteo(id) {
+        const container = document.querySelector(`.card-container[data-id="${id}"]`);
+        if (container) {
+            container.classList.toggle('flipped');
+        }
+    }
+
+    // ========================================================
+    // RENDERIZADO
+    // ========================================================
+    const grid = document.getElementById('grid');
+
+    function generarPortadaSVG(titulo) {
+        const colores = ['#f0e6d3', '#d9cbb8', '#e8d5b7', '#f5e6cc', '#eaddc5'];
+        const colorFondo = colores[Math.floor(Math.random() * colores.length)];
+        const tituloCodificado = encodeURIComponent(titulo);
+        return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect width='200' height='300' fill='${colorFondo}'/%3E%3Ctext x='50%25' y='45%25' font-size='16' font-weight='bold' text-anchor='middle' dy='.3em' font-family='Georgia, serif' fill='%23333'%3E${tituloCodificado}%3C/text%3E%3Ctext x='50%25' y='60%25' font-size='10' text-anchor='middle' fill='%23666'%3ETR%C3%8DPODE%3C/text%3E%3C/svg%3E`;
+    }
+
+    function renderizarLibros(libros) {
+        if (!libros || libros.length === 0) {
+            grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; font-size:18px; color:#999; padding:40px 0;">📭 No hay libros cargados.</p>`;
+            return;
+        }
+        let html = '';
+        libros.forEach(libro => {
+            const portada = libro.imagen || generarPortadaSVG(libro.titulo);
+            const esFavorito = favoritos.includes(libro.id);
+            const adminBtns = esAdmin ? `
+                <button class="btn-editar" onclick="event.stopPropagation(); abrirModalEditar(${libro.id})">✏️</button>
+                <button class="btn-eliminar" onclick="event.stopPropagation(); eliminarLibroHandler(${libro.id})">🗑️</button>
+            ` : '';
+
+            html += `
+                <div class="card-container" data-id="${libro.id}" onclick="toggleVolteo(${libro.id})">
+                    <div class="card-flip">
+                        <!-- FRENTE -->
+                        <div class="card-front">
+                            ${esFavorito ? '<div class="favorito-badge">❤️</div>' : ''}
+                            <img src="${portada}" alt="${libro.titulo}" loading="lazy">
+                            <div class="info">
+                                <h3>${libro.titulo}</h3>
+                                <div class="autor">${libro.autor}</div>
+                                <div>
+                                    <span class="precio">$ ${Number(libro.precio).toFixed(2)}</span>
+                                    <span class="unidades"> | 📦 ${libro.unidades}</span>
+                                </div>
+                                <div class="card-actions" onclick="event.stopPropagation();">
+                                    <button class="btn-favorito ${esFavorito ? 'activo' : ''}" onclick="toggleFavorito(${libro.id})">
+                                        ${esFavorito ? '❤️' : '🤍'}
+                                    </button>
+                                    ${adminBtns}
+                                </div>
+                            </div>
+                        </div>
+                        <!-- REVERSO (RESEÑA) -->
+                        <div class="card-back">
+                            <div class="back-titulo">${libro.titulo}</div>
+                            <div class="back-reseña">${libro.reseña || 'Sin reseña disponible.'}</div>
+                            <div class="back-autor">— ${libro.autor}</div>
+                            <div class="back-precio">$ ${Number(libro.precio).toFixed(2)}</div>
+                            <div style="margin-top:6px; font-size:11px; color:#aaa;">🔄 Haz clic para voltear</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+        document.getElementById('contadorLibrosSidebar').textContent = libros.length;
+        document.getElementById('contadorFavHeader').textContent = favoritos.length;
+    }
+
+    // ========================================================
+    // FAVORITOS
+    // ========================================================
+    function toggleFavorito(id) {
+        const index = favoritos.indexOf(id);
+        if (index > -1) {
+            favoritos.splice(index, 1);
+        } else {
+            favoritos.push(id);
+        }
+        localStorage.setItem('favoritos', JSON.stringify(favoritos));
+        actualizarSidebarFav();
+        cargarYRenderizar();
+    }
+
+    function toggleSidebarFav() {
+        const sidebar = document.getElementById('sidebarFav');
+        if (sidebar.style.display === 'none' || sidebar.style.display === '') {
+            sidebar.style.display = 'block';
+            actualizarSidebarFav();
+        } else {
+            sidebar.style.display = 'none';
+        }
+    }
+
+    function actualizarSidebarFav() {
+        const container = document.getElementById('listaFavoritos');
+        if (favoritos.length === 0) {
+            container.innerHTML = '<p style="color:#999;">No tienes libros favoritos.</p>';
+            return;
+        }
+        obtenerTodosLosLibros().then(libros => {
+            const favLibros = libros.filter(l => favoritos.includes(l.id));
+            let html = '';
+            favLibros.forEach(libro => {
+                html += `
+                    <div class="fav-item">
+                        <div class="fav-info">
+                            <strong>${libro.titulo}</strong>
+                            <span>$${Number(libro.precio).toFixed(2)}</span>
+                        </div>
+                        <button onclick="toggleFavorito(${libro.id})">🗑️</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        });
+        document.getElementById('contadorFavHeader').textContent = favoritos.length;
+    }
+
+    // ========================================================
+    // LOGIN
+    // ========================================================
+    function iniciarSesion() {
+        const usuario = document.getElementById('loginUsuario').value.trim();
+        const clave = document.getElementById('loginClave').value;
+        const errorEl = document.getElementById('loginError');
+
+        if (usuario === USUARIO_ADMIN && clave === CLAVE_ADMIN) {
+            usuarioActual = usuario;
+            esAdmin = true;
+            errorEl.textContent = '';
+            mostrarContenidoPrincipal();
+        } else if (usuario === 'visitante') {
+            usuarioActual = 'visitante';
+            esAdmin = false;
+            errorEl.textContent = '';
+            mostrarContenidoPrincipal();
+        } else {
+            errorEl.textContent = '❌ Usuario o clave incorrectos.';
+        }
+    }
+
+    function mostrarContenidoPrincipal() {
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('mainLayout').classList.add('active');
+        document.getElementById('usuarioSidebar').textContent = usuarioActual;
+        if (!esAdmin) {
+            document.getElementById('menuAdmin').style.display = 'none';
+        } else {
+            document.getElementById('menuAdmin').style.display = 'flex';
+        }
+        cambiarPanel('panelLibros');
+        cargarYRenderizar();
+    }
+
+    function cerrarSesion() {
+        usuarioActual = null;
+        esAdmin = false;
+        document.getElementById('mainLayout').classList.remove('active');
+        document.getElementById('loginBox').style.display = 'block';
+        document.getElementById('loginError').textContent = '';
+        document.getElementById('sidebarFav').style.display = 'none';
+    }
+
+    // ========================================================
+    // NAVEGACIÓN
+    // ========================================================
+    function cambiarPanel(panelId) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(panelId).classList.add('active');
+        document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+        document.querySelector(`.menu-item[data-panel="${panelId}"]`)?.classList.add('active');
+        panelActual = panelId;
+        if (panelId === 'panelLibros') {
+            cargarYRenderizar();
+        }
+    }
+
+    // ========================================================
+    // FORMULARIO
+    // ========================================================
+    const form = document.getElementById('formLibro');
+    const mensajeAdmin = document.getElementById('mensajeAdmin');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!esAdmin) return;
+
+        const editId = document.getElementById('editId').value;
+        const titulo = document.getElementById('titulo').value.trim();
+        const autor = document.getElementById('autor').value.trim();
+        const reseña = document.getElementById('reseña').value.trim();
+        const precio = parseFloat(document.getElementById('precio').value);
+        const unidades = parseInt(document.getElementById('unidades').value);
+        const imagenFile = document.getElementById('imagen').files[0];
+
+        let imagen = '';
+        if (imagenFile) {
+            try {
+                imagen = await convertirImagenABase64(imagenFile);
+            } catch (error) {
+                mensajeAdmin.textContent = '❌ Error al procesar la imagen.';
+                return;
+            }
+        }
+
+        const libro = { titulo, autor, reseña, precio, unidades, imagen };
+
+        try {
+            if (editId) {
+                await actualizarLibro(parseInt(editId), libro);
+                mensajeAdmin.textContent = '✅ Libro actualizado correctamente.';
+                cancelarEdicion();
+            } else {
+                await agregarLibro(libro);
+                mensajeAdmin.textContent = '✅ Libro agregado correctamente.';
+                form.reset();
+            }
+            await cargarYRenderizar();
+        } catch (error) {
+            console.error('Error al guardar:', error);
+            mensajeAdmin.textContent = '❌ Error al guardar el libro.';
+        }
+    });
+
+    function cancelarEdicion() {
+        document.getElementById('editId').value = '';
+        form.reset();
+        mensajeAdmin.textContent = '';
+        document.getElementById('titulo').focus();
+    }
+
+    // ========================================================
+    // MODAL DE EDICIÓN
+    // ========================================================
+    let libroEditando = null;
+
+    async function abrirModalEditar(id) {
+        if (!esAdmin) return;
+        const libros = await obtenerTodosLosLibros();
+        const libro = libros.find(l => l.id === id);
+        if (!libro) return;
+
+        libroEditando = libro;
+        document.getElementById('modalEditId').value = libro.id;
+        document.getElementById('modalTitulo').value = libro.titulo;
+        document.getElementById('modalAutor').value = libro.autor;
+        document.getElementById('modalReseña').value = libro.reseña;
+        document.getElementById('modalPrecio').value = libro.precio;
+        document.getElementById('modalUnidades').value = libro.unidades;
+        document.getElementById('modalImagen').value = '';
+        document.getElementById('modalEditar').classList.add('active');
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalEditar').classList.remove('active');
+        libroEditando = null;
+    }
+
+    async function guardarEdicionModal() {
+        if (!esAdmin) return;
+        const id = parseInt(document.getElementById('modalEditId').value);
+        const titulo = document.getElementById('modalTitulo').value.trim();
+        const autor = document.getElementById('modalAutor').value.trim();
+        const reseña = document.getElementById('modalReseña').value.trim();
+        const precio = parseFloat(document.getElementById('modalPrecio').value);
+        const unidades = parseInt(document.getElementById('modalUnidades').value);
+        const imagenFile = document.getElementById('modalImagen').files[0];
+
+        let imagen = libroEditando.imagen || '';
+        if (imagenFile) {
+            try {
+                imagen = await convertirImagenABase64(imagenFile);
+            } catch (error) {
+                alert('❌ Error al procesar la imagen.');
+                return;
+            }
+        }
+
+        const libro = { titulo, autor, reseña, precio, unidades, imagen };
+
+        try {
+            await actualizarLibro(id, libro);
+            cerrarModal();
+            await cargarYRenderizar();
+            alert('✅ Libro actualizado correctamente.');
+        } catch (error) {
+            console.error('Error al actualizar:', error);
+            alert('❌ Error al actualizar el libro.');
+        }
+    }
+
+    // ========================================================
+    // ELIMINAR
+    // ========================================================
+    async function eliminarLibroHandler(id) {
+        if (!esAdmin) return;
+        if (!confirm('¿Seguro que deseas eliminar este libro?')) return;
+        try {
+            await eliminarLibro(id);
+            const idx = favoritos.indexOf(id);
+            if (idx > -1) {
+                favoritos.splice(idx, 1);
+                localStorage.setItem('favoritos', JSON.stringify(favoritos));
+            }
+            await cargarYRenderizar();
+        } catch (error) {
+            console.error('Error al eliminar:', error);
+            alert('❌ Error al eliminar el libro.');
+        }
+    }
+
+    // ========================================================
+    // BÚSQUEDA
+    // ========================================================
+    const searchInput = document.getElementById('searchInput');
+
+    async function buscarLibros() {
+        const filtro = searchInput.value.trim().toLowerCase();
+        const libros = await obtenerTodosLosLibros();
+        if (!filtro) {
+            renderizarLibros(libros);
+            return;
+        }
+        const filtrados = libros.filter(libro =>
+            libro.titulo.toLowerCase().includes(filtro) ||
+            libro.autor.toLowerCase().includes(filtro) ||
+            libro.reseña.toLowerCase().includes(filtro)
+        );
+        renderizarLibros(filtrados);
+    }
+
+    async function mostrarTodos() {
+        searchInput.value = '';
+        const libros = await obtenerTodosLosLibros();
+        renderizarLibros(libros);
+    }
+
+    async function cargarYRenderizar() {
+        const libros = await obtenerTodosLosLibros();
+        renderizarLibros(libros);
+        actualizarSidebarFav();
+        document.getElementById('contadorFavHeader').textContent = favoritos.length;
+    }
+
+    // ========================================================
+    // RESPALDO JSON
+    // ========================================================
+    async function exportarJSON() {
+        try {
+            const libros = await obtenerTodosLosLibros();
+            const data = {
+                fecha: new Date().toISOString(),
+                libros: libros,
+                favoritos: favoritos,
+                version: '1.0'
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tripode_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('✅ Respaldo exportado correctamente.');
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            alert('❌ Error al exportar los datos.');
+        }
+    }
+
+    async function importarJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            if (!data.libros || !Array.isArray(data.libros)) {
+                throw new Error('El archivo no tiene un formato válido.');
+            }
+            if (!confirm(`¿Importar ${data.libros.length} libros? Se reemplazarán todos los datos actuales.`)) return;
+
+            await limpiarBaseDeDatos();
+
+            for (const libro of data.libros) {
+                const { id, ...libroSinId } = libro;
+                await agregarLibro(libroSinId);
+            }
+
+            if (data.favoritos) {
+                favoritos = data.favoritos;
+                localStorage.setItem('favoritos', JSON.stringify(favoritos));
+            }
+
+            await cargarYRenderizar();
+            alert('✅ Datos importados correctamente.');
+            event.target.value = '';
+            cambiarPanel('panelLibros');
+        } catch (error) {
+            console.error('Error al importar:', error);
+            alert('❌ Error al importar el archivo. Verifica que sea un JSON válido.');
+        }
+    }
+
+    // ========================================================
+    // INICIALIZACIÓN
+    // ========================================================
+    async function initApp() {
+        try {
+            await abrirBaseDeDatos();
+            const libros = await obtenerTodosLosLibros();
+
+            // Siempre cargar todos los libros del catálogo completo
+            // (esto reemplazará los datos existentes)
+            if (libros.length > 0) {
+                // Si ya hay libros, preguntar si se quiere actualizar
+                if (confirm('¿Deseas actualizar el catálogo con la lista completa de libros? (Se reemplazarán los datos actuales)')) {
+                    await limpiarBaseDeDatos();
+                    for (const libro of librosCatalogoCompleto) {
+                        await agregarLibro(libro);
+                    }
+                    await cargarYRenderizar();
+                }
+            } else {
+                // Si está vacío, cargar todos
+                for (const libro of librosCatalogoCompleto) {
+                    await agregarLibro(libro);
+                }
+                await cargarYRenderizar();
+            }
+            console.log('✅ Aplicación inicializada correctamente.');
+        } catch (error) {
+            console.error('❌ Error al inicializar:', error);
+        }
+    }
+
+    // ========================================================
+    // EVENTOS
+    // ========================================================
+    document.getElementById('loginClave').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') iniciarSesion();
+    });
+    document.getElementById('loginUsuario').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') iniciarSesion();
+    });
+    searchInput.addEventListener('input', buscarLibros);
+
+    // Exponer funciones globales
+    window.iniciarSesion = iniciarSesion;
+    window.cerrarSesion = cerrarSesion;
+    window.cambiarPanel = cambiarPanel;
+    window.abrirModalEditar = abrirModalEditar;
+    window.cerrarModal = cerrarModal;
+    window.guardarEdicionModal = guardarEdicionModal;
+    window.eliminarLibroHandler = eliminarLibroHandler;
+    window.mostrarTodos = mostrarTodos;
+    window.cancelarEdicion = cancelarEdicion;
+    window.toggleFavorito = toggleFavorito;
+    window.toggleSidebarFav = toggleSidebarFav;
+    window.exportarJSON = exportarJSON;
+    window.importarJSON = importarJSON;
+    window.toggleVolteo = toggleVolteo;
+
+    initApp();
+</script>
+</body>
+</html>
