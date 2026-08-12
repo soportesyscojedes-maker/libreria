@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo Trípode</title>
+    <!-- Librería jsPDF para exportar a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
     <style>
         * {
             box-sizing: border-box;
@@ -379,6 +382,10 @@
             background: #d32f2f;
             color: #fff;
         }
+        .btn-carrito {
+            background: #ff9800;
+            color: #fff;
+        }
         .admin-panel form {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -544,6 +551,7 @@
         .modal-actions .btn-cerrar-modal:hover {
             background: #b71c1c;
         }
+        /* Sidebar Favoritos */
         #sidebarFav {
             display: none;
             position: fixed;
@@ -574,6 +582,37 @@
             border-radius: 8px;
             cursor: pointer;
         }
+        /* Sidebar Carrito */
+        #sidebarCarrito {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 360px;
+            height: 100%;
+            background: #fff;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+            z-index: 2000;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        #sidebarCarrito .fav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #sidebarCarrito .fav-header h2 {
+            color: #1a1a2e;
+        }
+        #sidebarCarrito .fav-header button {
+            background: #d32f2f;
+            color: #fff;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
         .fav-item {
             display: flex;
             justify-content: space-between;
@@ -596,6 +635,70 @@
             padding: 4px 12px;
             border-radius: 4px;
             cursor: pointer;
+        }
+        .fav-item .btn-cantidad {
+            background: #ff9800;
+            padding: 2px 8px;
+            font-size: 14px;
+        }
+        .fav-item .btn-cantidad-mas {
+            background: #4CAF50;
+            padding: 2px 8px;
+            font-size: 14px;
+        }
+        .total-carrito {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .btn-accion-carrito {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        .btn-vaciar {
+            background: #d32f2f;
+            color: #fff;
+        }
+        .btn-vaciar:hover {
+            background: #b71c1c;
+        }
+        .btn-exportar-pdf {
+            background: #c62828;
+            color: #fff;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 8px;
+            font-weight: 600;
+        }
+        .btn-exportar-pdf:hover {
+            background: #b71c1c;
+        }
+        .btn-exportar-pdf-carrito {
+            background: #c62828;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        .btn-exportar-pdf-carrito:hover {
+            background: #b71c1c;
         }
         @media (max-width: 768px) {
             .main-layout {
@@ -646,7 +749,8 @@
             .backup-panel .backup-actions {
                 flex-direction: column;
             }
-            #sidebarFav {
+            #sidebarFav,
+            #sidebarCarrito {
                 width: 100%;
             }
         }
@@ -661,734 +765,1152 @@
     </style>
 </head>
 <body>
-<div class="app" id="app">
-    <div id="loginBox" class="login-box">
-        <h2>📚 Catálogo Trípode</h2>
-        <p style="color:#666; margin-bottom:16px;">🔐 Acceso al sistema</p>
-        <input type="text" id="loginUsuario" placeholder="Usuario" value="visitante">
-        <input type="password" id="loginClave" placeholder="Clave" value="">
-        <button onclick="iniciarSesion()">Ingresar</button>
-        <div id="loginError" class="error"></div>
-        <div class="info">
-            <strong>visitante</strong> (sin clave) | <strong>admin</strong> / clave: <strong>SOLICITAR A ADMINISTRADOR</strong>
+    <div class="app" id="app">
+        <div id="loginBox" class="login-box">
+            <h2>📚 Catálogo Trípode</h2>
+            <p style="color:#666; margin-bottom:16px;">🔐 Acceso al sistema</p>
+            <input type="text" id="loginUsuario" placeholder="Usuario" value="visitante">
+            <input type="password" id="loginClave" placeholder="Clave" value="">
+            <button onclick="iniciarSesion()">Ingresar</button>
+            <div id="loginError" class="error"></div>
+            <div class="info">
+                <strong>visitante</strong> (sin clave) | <strong>admin</strong> / clave: <strong>1234</strong>
+            </div>
         </div>
-    </div>
 
-    <div id="mainLayout" class="main-layout">
-        <aside class="sidebar">
-            <div class="logo">
-                <h2>📚 <span>Trípode</span></h2>
-            </div>
-            <div class="user-info">
-                👤 <strong id="usuarioSidebar">admin</strong>
-            </div>
-            <div class="menu-item active" data-panel="panelLibros" onclick="cambiarPanel('panelLibros')">
-                <span class="icon">📖</span> Vista de Libros
-                <span class="badge" id="contadorLibrosSidebar">0</span>
-            </div>
-            <div class="menu-item" data-panel="panelAdmin" onclick="cambiarPanel('panelAdmin')" id="menuAdmin">
-                <span class="icon">⚙️</span> Administración
-            </div>
-            <div class="menu-item" data-panel="panelBackup" onclick="cambiarPanel('panelBackup')">
-                <span class="icon">💾</span> Respaldo
-            </div>
-            <div class="logout-section">
-                <button onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
-            </div>
-        </aside>
-
-        <main class="content">
-            <div id="panelLibros" class="panel active">
-                <h2>📖 Catálogo de Libros </h2>
-                <div class="visor-header">
-                    <input type="text" id="searchInput" placeholder="Buscar por título, autor o reseña...">
-                    <button onclick="mostrarTodos()">📋 Mostrar todos</button>
-                    <button onclick="toggleSidebarFav()" style="background:#ffd54f; color:#1a1a2e;">
-                        ❤️ Favoritos (<span id="contadorFavHeader">0</span>)
-                    </button>
+        <div id="mainLayout" class="main-layout">
+            <aside class="sidebar">
+                <div class="logo">
+                    <h2>📚 <span>Trípode</span></h2>
                 </div>
-                <div id="grid" class="grid"></div>
-            </div>
-
-            <div id="panelAdmin" class="panel">
-                <h2>⚙️ Administrar Catálogo</h2>
-                <div class="admin-panel">
-                    <form id="formLibro">
-                        <input type="hidden" id="editId" value="">
-                        <input type="text" id="titulo" placeholder="Título del libro" required>
-                        <input type="text" id="autor" placeholder="Autor" required>
-                        <textarea id="reseña" placeholder="Reseña del libro" required></textarea>
-                        <input type="number" id="precio" placeholder="Precio (USD)" step="0.01" required>
-                        <input type="number" id="unidades" placeholder="Unidades disponibles" required>
-                        <input type="file" id="imagen" accept="image/*">
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap; grid-column: 1 / -1;">
-                            <button type="submit">💾 Guardar Libro</button>
-                            <button type="button" class="btn-cancelar" onclick="cancelarEdicion()">❌ Cancelar</button>
-                        </div>
-                    </form>
-                    <div id="mensajeAdmin" class="mensaje"></div>
+                <div class="user-info">
+                    👤 <strong id="usuarioSidebar">admin</strong>
                 </div>
-            </div>
+                <div class="menu-item active" data-panel="panelLibros" onclick="cambiarPanel('panelLibros')">
+                    <span class="icon">📖</span> Vista de Libros
+                    <span class="badge" id="contadorLibrosSidebar">0</span>
+                </div>
+                <div class="menu-item" data-panel="panelAdmin" onclick="cambiarPanel('panelAdmin')" id="menuAdmin">
+                    <span class="icon">⚙️</span> Administración
+                </div>
+                <div class="menu-item" data-panel="panelBackup" onclick="cambiarPanel('panelBackup')">
+                    <span class="icon">💾</span> Respaldo
+                </div>
+                <div class="logout-section">
+                    <button onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
+                </div>
+            </aside>
 
-            <div id="panelBackup" class="panel">
-                <h2>💾 Respaldo de Datos</h2>
-                <div class="backup-panel">
-                    <div class="backup-actions">
-                        <button class="btn-exportar" onclick="exportarJSON()">📤 Exportar a JSON</button>
-                        <button class="btn-importar" onclick="document.getElementById('importFile').click()">
-                            📥 Importar desde JSON
+            <main class="content">
+                <div id="panelLibros" class="panel active">
+                    <h2>📖 Catálogo de Libros</h2>
+                    <div class="visor-header">
+                        <input type="text" id="searchInput" placeholder="Buscar por título, autor o reseña...">
+                        <button onclick="mostrarTodos()">📋 Mostrar todos</button>
+                        <button onclick="toggleSidebarFav()" style="background:#ffd54f; color:#1a1a2e;">
+                            ❤️ Favoritos (<span id="contadorFavHeader">0</span>)
                         </button>
-                        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importarJSON(event)">
+                        <button onclick="toggleSidebarCarrito()" style="background:#ff9800; color:#fff;">
+                            🛒 Carrito (<span id="contadorCarritoHeader">0</span>)
+                        </button>
                     </div>
-                    <div class="info-backup">
-                        <strong>📌 ¿Qué incluye el respaldo?</strong><br>
-                        Todos los libros del catálogo (53 títulos) + tu lista de favoritos.
+                    <div id="grid" class="grid"></div>
+                </div>
+
+                <div id="panelAdmin" class="panel">
+                    <h2>⚙️ Administrar Catálogo</h2>
+                    <div class="admin-panel">
+                        <form id="formLibro">
+                            <input type="hidden" id="editId" value="">
+                            <input type="text" id="titulo" placeholder="Título del libro" required>
+                            <input type="text" id="autor" placeholder="Autor" required>
+                            <textarea id="reseña" placeholder="Reseña del libro" required></textarea>
+                            <input type="number" id="precio" placeholder="Precio (USD)" step="0.01" required>
+                            <input type="number" id="unidades" placeholder="Unidades disponibles" required>
+                            <input type="file" id="imagen" accept="image/*">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap; grid-column: 1 / -1;">
+                                <button type="submit">💾 Guardar Libro</button>
+                                <button type="button" class="btn-cancelar" onclick="cancelarEdicion()">❌ Cancelar</button>
+                            </div>
+                        </form>
+                        <div id="mensajeAdmin" class="mensaje"></div>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
 
-    <div id="sidebarFav">
-        <div class="fav-header">
-            <h2>❤️ Favoritos</h2>
-            <button onclick="toggleSidebarFav()">✕ Cerrar</button>
+                <div id="panelBackup" class="panel">
+                    <h2>💾 Respaldo de Datos</h2>
+                    <div class="backup-panel">
+                        <div class="backup-actions">
+                            <button class="btn-exportar" onclick="exportarJSON()">📤 Exportar a JSON</button>
+                            <button class="btn-importar" onclick="document.getElementById('importFile').click()">
+                                📥 Importar desde JSON
+                            </button>
+                            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importarJSON(event)">
+                        </div>
+                        <div class="info-backup">
+                            <strong>📌 ¿Qué incluye el respaldo?</strong><br>
+                            Todos los libros del catálogo (53 títulos) + tu lista de favoritos + tu carrito de compras.
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
-        <div id="listaFavoritos"></div>
-    </div>
 
-    <div id="modalEditar" class="modal">
-        <div class="modal-content">
-            <h2>✏️ Editar Libro</h2>
-            <input type="hidden" id="modalEditId">
-            <input type="text" id="modalTitulo" placeholder="Título">
-            <input type="text" id="modalAutor" placeholder="Autor">
-            <textarea id="modalReseña" placeholder="Reseña"></textarea>
-            <input type="number" id="modalPrecio" placeholder="Precio (USD)" step="0.01">
-            <input type="number" id="modalUnidades" placeholder="Unidades disponibles">
-            <input type="file" id="modalImagen" accept="image/*">
-            <div class="modal-actions">
-                <button class="btn-guardar" onclick="guardarEdicionModal()">💾 Guardar</button>
-                <button class="btn-cerrar-modal" onclick="cerrarModal()">✕ Cancelar</button>
+        <!-- Sidebar Favoritos -->
+        <div id="sidebarFav">
+            <div class="fav-header">
+                <h2>❤️ Favoritos</h2>
+                <div>
+                    <button class="btn-exportar-pdf" onclick="exportarFavoritosPDF()">📄 Exportar PDF</button>
+                    <button onclick="toggleSidebarFav()">✕ Cerrar</button>
+                </div>
+            </div>
+            <div id="listaFavoritos"></div>
+        </div>
+
+        <!-- Sidebar Carrito -->
+        <div id="sidebarCarrito">
+            <div class="fav-header">
+                <h2>🛒 Carrito de Compras</h2>
+                <button onclick="toggleSidebarCarrito()">✕ Cerrar</button>
+            </div>
+            <div id="listaCarrito">
+                <p style="color:#999;">No hay libros en el carrito.</p>
+            </div>
+            <div class="total-carrito">
+                <span>Total:</span>
+                <span id="totalCarrito">$ 0.00</span>
+            </div>
+            <button class="btn-accion-carrito btn-vaciar" onclick="vaciarCarrito()">🗑️ Vaciar Carrito</button>
+            <button class="btn-exportar-pdf-carrito" onclick="exportarCarritoPDF()">📄 Exportar PDF</button>
+        </div>
+
+        <div id="modalEditar" class="modal">
+            <div class="modal-content">
+                <h2>✏️ Editar Libro</h2>
+                <input type="hidden" id="modalEditId">
+                <input type="text" id="modalTitulo" placeholder="Título">
+                <input type="text" id="modalAutor" placeholder="Autor">
+                <textarea id="modalReseña" placeholder="Reseña"></textarea>
+                <input type="number" id="modalPrecio" placeholder="Precio (USD)" step="0.01">
+                <input type="number" id="modalUnidades" placeholder="Unidades disponibles">
+                <input type="file" id="modalImagen" accept="image/*">
+                <div class="modal-actions">
+                    <button class="btn-guardar" onclick="guardarEdicionModal()">💾 Guardar</button>
+                    <button class="btn-cerrar-modal" onclick="cerrarModal()">✕ Cancelar</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    // ========================================================
-    // CONFIGURACIÓN
-    // ========================================================
-    const USUARIO_ADMIN = 'admin';
-    const CLAVE_ADMIN = '1234';
+    <script>
+        // ========================================================
+        // CONFIGURACIÓN
+        // ========================================================
+        const USUARIO_ADMIN = 'admin';
+        const CLAVE_ADMIN = '1234';
 
-    let usuarioActual = null;
-    let esAdmin = false;
-    let favoritos = JSON.parse(localStorage.getItem('favoritos')) || [];
-    let panelActual = 'panelLibros';
+        let usuarioActual = null;
+        let esAdmin = false;
+        let favoritos = JSON.parse(localStorage.getItem('favoritos')) || [];
+        let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+        let panelActual = 'panelLibros';
 
-    // ========================================================
-    // BASE DE DATOS OFFLINE (IndexedDB)
-    // ========================================================
-    const DB_NAME = 'TripodeCatalog';
-    const DB_VERSION = 1;
-    const STORE_NAME = 'libros';
-    let db = null;
+        // ========================================================
+        // BASE DE DATOS OFFLINE (IndexedDB)
+        // ========================================================
+        const DB_NAME = 'TripodeCatalog';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'libros';
+        let db = null;
 
-    function abrirBaseDeDatos() {
-        return new Promise((resolve, reject) => {
-            try {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                        store.createIndex('titulo', 'titulo', { unique: false });
-                        store.createIndex('autor', 'autor', { unique: false });
-                    }
-                };
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    console.log('✅ IndexedDB abierta correctamente');
-                    resolve(db);
-                };
-                request.onerror = (event) => {
-                    console.error('❌ Error al abrir IndexedDB:', event.target.error);
-                    reject(event.target.error);
-                };
-            } catch (error) {
-                console.error('❌ Excepción al abrir IndexedDB:', error);
-                reject(error);
-            }
-        });
-    }
-
-    function agregarLibro(libro) {
-        return new Promise((resolve, reject) => {
-            try {
-                const transaction = db.transaction(STORE_NAME, 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.add(libro);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = (e) => reject(e);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    function obtenerTodosLosLibros() {
-        return new Promise((resolve, reject) => {
-            try {
-                const transaction = db.transaction(STORE_NAME, 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = (e) => reject(e);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    function actualizarLibro(id, datos) {
-        return new Promise((resolve, reject) => {
-            try {
-                const transaction = db.transaction(STORE_NAME, 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.put({ ...datos, id });
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = (e) => reject(e);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    function eliminarLibro(id) {
-        return new Promise((resolve, reject) => {
-            try {
-                const transaction = db.transaction(STORE_NAME, 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.delete(id);
-                request.onsuccess = () => resolve();
-                request.onerror = (e) => reject(e);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    function limpiarBaseDeDatos() {
-        return new Promise((resolve, reject) => {
-            try {
-                const transaction = db.transaction(STORE_NAME, 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.clear();
-                request.onsuccess = () => resolve();
-                request.onerror = (e) => reject(e);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    function convertirImagenABase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (error) => reject(error);
-            reader.readAsDataURL(file);
-        });
-    }
-
-    // ========================================================
-    // LISTA COMPLETA DE 53 LIBROS
-    // ========================================================
-    const librosCatalogoCompleto = [
-        // ARCHIVO 1: CamScanner.pdf
-        { titulo: 'Montesino', autor: 'Víctor Pérez', reseña: 'Vida de Fray Antonio de Montesinos, defensor de los indígenas.', precio: 0.00, unidades: 0 },
-        { titulo: 'La democracia venezolana en terapia intensiva', autor: 'Alfredo Viso Casado', reseña: 'Análisis crítico de la democracia venezolana.', precio: 0.00, unidades: 0 },
-        { titulo: 'Prehistoria y primeros capítulos de la Evangelización de América', autor: '—', reseña: 'Análisis de la evangelización de América.', precio: 0.00, unidades: 0 },
-        { titulo: 'Un cura, evangelio viviente Don Baltasar Pardal', autor: 'Agustín Augustinovich, Ofm.', reseña: 'Vida de Don Baltasar Pardal, sacerdote gallego.', precio: 0.00, unidades: 0 },
-        { titulo: 'Fray Martín de Porras', autor: '—', reseña: 'Vida de Fray Martín de Porres, santo peruano.', precio: 0.00, unidades: 0 },
-        { titulo: 'Los diez grandes evangelizadores de Colombia', autor: '—', reseña: 'Perfiles de los grandes evangelizadores de Colombia.', precio: 0.00, unidades: 0 },
-        { titulo: 'San Francisco Solano', autor: 'J. García Oro', reseña: 'Vida de San Francisco Solano, misionero franciscano.', precio: 0.00, unidades: 0 },
-        { titulo: 'La vida maravillosa de San Luis Bertrán', autor: '—', reseña: 'Vida de San Luis Bertrán, evangelizador del Nuevo Mundo.', precio: 0.00, unidades: 0 },
-        { titulo: 'Os cuento el Código', autor: 'José María Piñero', reseña: 'Todo el nuevo Derecho de la Iglesia para el cristiano de la calle.', precio: 0.00, unidades: 0 },
-        { titulo: 'Cecilio Acosta, laico de viva fe', autor: '—', reseña: 'Vida de Cecilio Acosta, intelectual venezolano.', precio: 0.00, unidades: 0 },
-        { titulo: 'Evangelio de la Vida', autor: 'Juan Pablo II', reseña: 'Encíclica sobre el valor y la inviolabilidad de la vida humana.', precio: 0.00, unidades: 0 },
-        { titulo: 'El caballero de la ciudad de los caballeros', autor: '—', reseña: 'Biografía de un ilustre personaje.', precio: 0.00, unidades: 0 },
-        { titulo: 'Rafael María Baralt, exponente de la fe cristiana', autor: '—', reseña: 'Vida de Rafael María Baralt, historiador y periodista venezolano.', precio: 0.00, unidades: 0 },
-        { titulo: 'Nuestra Realidad', autor: 'Melda Sánchez de Carrión', reseña: 'Mirada a la vida cotidiana desde la fe y la esperanza.', precio: 0.00, unidades: 0 },
-        { titulo: 'Directorio sobre la Piedad Popular y la Liturgia', autor: 'Congregación para el Culto Divino', reseña: 'Directorio para integrar la piedad popular con la liturgia.', precio: 0.00, unidades: 0 },
-        { titulo: 'Decreto sobre la Formación Sacerdotal (Optatam Totius)', autor: 'Mons. William A. Guerra', reseña: 'Documento del Concilio Vaticano II sobre la formación sacerdotal.', precio: 0.00, unidades: 0 },
-        { titulo: 'La Iglesia en América (Ecclesia in America)', autor: 'Juan Pablo II', reseña: 'Exhortación apostólica sobre la Iglesia en América.', precio: 0.00, unidades: 0 },
-        { titulo: 'Decreto sobre el Apostolado de los Seglares (Apostolicam Actuositatem)', autor: 'Mons. Baltazar E. Porras Cardozo', reseña: 'Documento del Concilio Vaticano II sobre el apostolado de los laicos.', precio: 0.00, unidades: 0 },
-        { titulo: 'Misionero en la Gran Sabana', autor: 'Fr. Mariano Gutiérrez Salazar, OFMCap.', reseña: 'Experiencia pastoral entre los pueblos indígenas del sureste venezolano.', precio: 0.00, unidades: 0 },
-        { titulo: 'Exhortación Apostólica Post-Sinodal Reconciliatio et Paenitentia', autor: 'Juan Pablo II', reseña: 'Exhortación sobre la Reconciliación y la Penitencia.', precio: 0.00, unidades: 0 },
-        { titulo: 'Retazos', autor: 'Mario Briceño-Iragorry', reseña: 'Vida de Mario Briceño-Iragorry, intelectual venezolano.', precio: 1.00, unidades: 0 },
-        { titulo: 'El Patronato, el Concordato, el Convenio con la Santa Sede', autor: '—', reseña: 'Relaciones entre la Iglesia y el Estado en Venezuela.', precio: 0.00, unidades: 0 },
-
-        // ARCHIVO 2: CamScanner 21-07-2026 16.27.pdf
-        { titulo: 'Orientaciones educativas sobre el amor humano', autor: 'Sagrada Congregación para la Educación Católica', reseña: 'Pautas de educación sexual.', precio: 0.00, unidades: 0 },
-        { titulo: 'Los institutos seculares', autor: '—', reseña: 'Documento informativo sobre los institutos seculares.', precio: 0.00, unidades: 0 },
-        { titulo: 'Carta a los Obispos sobre la atención pastoral a las personas homosexuales', autor: 'Congregación para la Doctrina de la Fe', reseña: 'Orientaciones pastorales para la atención a personas homosexuales.', precio: 0.00, unidades: 0 },
-        { titulo: 'Dimensión religiosa de la educación en la escuela católica', autor: '—', reseña: 'Orientaciones para la reflexión y revisión en la escuela católica.', precio: 0.00, unidades: 0 },
-        { titulo: 'Carta a las personas consagradas con ocasión del Año Mariano', autor: 'Juan Pablo II', reseña: 'Carta del Santo Padre a las comunidades religiosas.', precio: 0.00, unidades: 0 },
-        { titulo: 'Christifideles Laici', autor: 'Juan Pablo II', reseña: 'Exhortación apostólica sobre la vocación y misión de los laicos.', precio: 0.00, unidades: 0 },
-        { titulo: 'Carta sobre algunos aspectos de la meditación cristiana', autor: 'Congregación para la Doctrina de la Fe', reseña: 'Orientaciones sobre la meditación cristiana.', precio: 0.00, unidades: 0 },
-        { titulo: 'Carta apostólica sobre la ordenación sacerdotal', autor: 'Juan Pablo II', reseña: 'Carta apostólica reservada solo a los hombres sobre la ordenación sacerdotal.', precio: 0.00, unidades: 0 },
-        { titulo: 'Evangelium Vitae', autor: 'Juan Pablo II', reseña: 'Encíclica sobre el valor y la inviolabilidad de la vida humana.', precio: 0.00, unidades: 0 },
-        { titulo: 'Preparación al sacramento del matrimonio', autor: 'Pontificio Consejo para la Familia', reseña: 'Orientaciones para la preparación al sacramento del matrimonio.', precio: 0.00, unidades: 0 },
-        { titulo: 'Vademécum para los confesores sobre algunos temas de moral conyugal', autor: 'Pontificio Consejo para la Familia', reseña: 'Guía para confesores sobre temas de moral conyugal.', precio: 0.00, unidades: 0 },
-        { titulo: 'Instrucción sobre la colaboración de los fieles laicos en el sagrado ministerio de los sacerdotes', autor: '—', reseña: 'Instrucción sobre algunas cuestiones acerca de la colaboración de los fieles laicos.', precio: 0.00, unidades: 0 },
-        { titulo: 'Apostolos Suos', autor: 'Juan Pablo II', reseña: 'Carta apostólica sobre la naturaleza teológica y jurídica de las Conferencias Episcopales.', precio: 0.00, unidades: 0 },
-        { titulo: 'La cuestión familiar', autor: '—', reseña: 'Reflexión sobre la cuestión familiar.', precio: 0.00, unidades: 0 },
-        { titulo: 'Directorio sobre la piedad popular y la liturgia', autor: '—', reseña: 'Directorio sobre la piedad popular y la liturgia.', precio: 0.00, unidades: 0 },
-        { titulo: 'Rosarium Virginis Mariae', autor: 'Juan Pablo II', reseña: 'Carta apostólica sobre el Santo Rosario.', precio: 0.00, unidades: 0 },
-        { titulo: 'Christus Vivit', autor: 'Papa Francisco', reseña: 'Exhortación apostólica post-sinodal a los jóvenes y al pueblo de Dios.', precio: 0.00, unidades: 0 },
-        { titulo: 'Gaudete et Exsultate', autor: 'Papa Francisco', reseña: 'Exhortación apostólica sobre la santidad en el mundo actual.', precio: 0.00, unidades: 0 },
-        { titulo: 'Misericordia et Misera', autor: 'Papa Francisco', reseña: 'Carta apostólica sobre la misericordia.', precio: 0.00, unidades: 0 },
-        { titulo: 'Verbum Domini', autor: 'Benedicto XVI', reseña: 'Exhortación apostólica post-sindodal sobre la Palabra de Dios.', precio: 0.00, unidades: 0 },
-        { titulo: 'Dignitas Personae', autor: 'Congregación para la Doctrina de la Fe', reseña: 'Instrucción sobre algunas cuestiones de bioética.', precio: 0.00, unidades: 0 },
-        { titulo: 'Deus Caritas Est', autor: 'Benedicto XVI', reseña: 'Encíclica sobre el amor cristiano.', precio: 0.00, unidades: 0 },
-        { titulo: 'Carta de los derechos de la familia', autor: 'Santa Sede', reseña: 'Carta presentada por la Santa Sede sobre la misión de la familia.', precio: 0.00, unidades: 0 },
-
-        // ARCHIVO 3: CamScanner (1).pdf - LIBROS ADICIONALES
-        { titulo: 'VIDA DE: Beato Pedro Betancur', autor: 'Mons. Mariano Gutiérrez, OFM. Cap.', reseña: 'Vida del Beato Pedro de San José Betancur, primer santo de Guatemala.', precio: 0.00, unidades: 0 },
-        { titulo: 'capuchino, misionero del guácharo y apóstol de galicia', autor: '—', reseña: 'Historia de un misionero capuchino en América.', precio: 0.00, unidades: 0 },
-        { titulo: 'Beatopedro Betancur', autor: 'Mons. Mariano Gutiérrez, OFM. Cap.', reseña: 'Vida del Beato Pedro de San José Betancur.', precio: 0.00, unidades: 0 },
-        { titulo: 'LUISA M. POLEO', autor: '—', reseña: 'Vida y obra de Luisa M. Poleo.', precio: 0.00, unidades: 0 },
-        { titulo: 'Nectario Andrade Labarca', autor: '—', reseña: 'Vida y obra de Nectario Andrade Labarca.', precio: 0.00, unidades: 0 },
-        { titulo: 'RAFAEL MARIA BARALT', autor: '—', reseña: 'Vida de Rafael María Baralt, historiador venezolano.', precio: 0.00, unidades: 0 },
-        { titulo: 'ALFREDO VISO CASADO', autor: '—', reseña: 'Obra de Alfredo Viso Casado.', precio: 0.00, unidades: 0 }
-    ];
-
-    // ========================================================
-    // FUNCIONES DE LA APLICACIÓN
-    // ========================================================
-    const grid = document.getElementById('grid');
-
-    function generarPortadaSVG(titulo) {
-        const colores = ['#f0e6d3', '#d9cbb8', '#e8d5b7', '#f5e6cc', '#eaddc5', '#e3d6c0', '#f2e8d5'];
-        const colorFondo = colores[Math.floor(Math.random() * colores.length)];
-        const tituloCodificado = encodeURIComponent(titulo);
-        return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect width='200' height='300' fill='${colorFondo}'/%3E%3Ctext x='50%25' y='35%25' font-size='18' font-weight='bold' text-anchor='middle' dy='.3em' font-family='Georgia, serif' fill='%23333'%3E${tituloCodificado}%3C/text%3E%3Ctext x='50%25' y='55%25' font-size='10' text-anchor='middle' fill='%23666' font-family='Georgia, serif'%3ETR%C3%8DPODE%3C/text%3E%3C/svg%3E`;
-    }
-
-    function renderizarLibros(libros) {
-        if (!libros || libros.length === 0) {
-            grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; font-size:18px; color:#999; padding:40px 0;">📭 No hay libros cargados.</p>`;
-            return;
+        function abrirBaseDeDatos() {
+            return new Promise((resolve, reject) => {
+                try {
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id',
+                            autoIncrement: true });
+                            store.createIndex('titulo', 'titulo', { unique: false });
+                            store.createIndex('autor', 'autor', { unique: false });
+                        }
+                    };
+                    request.onsuccess = (event) => {
+                        db = event.target.result;
+                        console.log('✅ IndexedDB abierta correctamente');
+                        resolve(db);
+                    };
+                    request.onerror = (event) => {
+                        console.error('❌ Error al abrir IndexedDB:', event.target.error);
+                        reject(event.target.error);
+                    };
+                } catch (error) {
+                    console.error('❌ Excepción al abrir IndexedDB:', error);
+                    reject(error);
+                }
+            });
         }
-        let html = '';
-        libros.forEach(libro => {
-            const portada = libro.imagen || generarPortadaSVG(libro.titulo);
-            const esFavorito = favoritos.includes(libro.id);
-            const adminBtns = esAdmin ? `
-                <button class="btn-editar" onclick="event.stopPropagation(); abrirModalEditar(${libro.id})">✏️</button>
-                <button class="btn-eliminar" onclick="event.stopPropagation(); eliminarLibroHandler(${libro.id})">🗑️</button>
-            ` : '';
 
-            html += `
-                <div class="card-container" data-id="${libro.id}" onclick="toggleVolteo(${libro.id})">
-                    <div class="card-flip">
-                        <div class="card-front">
-                            ${esFavorito ? '<div class="favorito-badge">❤️</div>' : ''}
-                            <img src="${portada}" alt="${libro.titulo}" loading="lazy">
-                            <div class="info">
-                                <h3>${libro.titulo}</h3>
-                                <div class="autor">${libro.autor}</div>
-                                <div>
-                                    <span class="precio">$ ${Number(libro.precio).toFixed(2)}</span>
-                                    <span class="unidades"> | 📦 ${libro.unidades}</span>
+        function agregarLibro(libro) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const transaction = db.transaction(STORE_NAME, 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.add(libro);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (e) => reject(e);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        function obtenerTodosLosLibros() {
+            return new Promise((resolve, reject) => {
+                try {
+                    const transaction = db.transaction(STORE_NAME, 'readonly');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (e) => reject(e);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        function actualizarLibro(id, datos) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const transaction = db.transaction(STORE_NAME, 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.put({ ...datos, id });
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (e) => reject(e);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        function eliminarLibro(id) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const transaction = db.transaction(STORE_NAME, 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.delete(id);
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        function limpiarBaseDeDatos() {
+            return new Promise((resolve, reject) => {
+                try {
+                    const transaction = db.transaction(STORE_NAME, 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.clear();
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        function convertirImagenABase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (error) => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ========================================================
+        // LISTA COMPLETA DE 53 LIBROS (del backup)
+        // ========================================================
+        const librosCatalogoCompleto = [
+            { titulo: 'Montesino', autor: 'Víctor Pérez', reseña: 'Vida de Fray Antonio de Montesinos, defensor de los indígenas.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'La democracia venezolana en terapia intensiva', autor: 'Alfredo Viso Casado',
+                reseña: 'Análisis crítico de la democracia venezolana.', precio: 0.00, unidades: 0 },
+            { titulo: 'Prehistoria y primeros capítulos de la Evangelización de América', autor: '—',
+                reseña: 'Análisis de la evangelización de América.', precio: 0.00, unidades: 0 },
+            { titulo: 'Un cura, evangelio viviente Don Baltasar Pardal', autor: 'Agustín Augustinovich, Ofm.',
+                reseña: 'Vida de Don Baltasar Pardal, sacerdote gallego.', precio: 0.00, unidades: 0 },
+            { titulo: 'Fray Martín de Porras', autor: '—', reseña: 'Vida de Fray Martín de Porres, santo peruano.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'Los diez grandes evangelizadores de Colombia', autor: '—',
+                reseña: 'Perfiles de los grandes evangelizadores de Colombia.', precio: 0.00, unidades: 0 },
+            { titulo: 'San Francisco Solano', autor: 'J. García Oro', reseña: 'Vida de San Francisco Solano, misionero franciscano.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'La vida maravillosa de San Luis Bertrán', autor: '—',
+                reseña: 'Vida de San Luis Bertrán, evangelizador del Nuevo Mundo.', precio: 0.00, unidades: 0 },
+            { titulo: 'Os cuento el Código', autor: 'José María Piñero',
+                reseña: 'Todo el nuevo Derecho de la Iglesia para el cristiano de la calle.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'Cecilio Acosta, laico de viva fe', autor: '—', reseña: 'Vida de Cecilio Acosta, intelectual venezolano.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'Evangelio de la Vida', autor: 'Juan Pablo II',
+                reseña: 'Encíclica sobre el valor y la inviolabilidad de la vida humana.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'El caballero de la ciudad de los caballeros', autor: '—', reseña: 'Biografía de un ilustre personaje.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'Rafael María Baralt, exponente de la fe cristiana', autor: '—',
+                reseña: 'Vida de Rafael María Baralt, historiador y periodista venezolano.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'Nuestra Realidad', autor: 'Melda Sánchez de Carrión',
+                reseña: 'Mirada a la vida cotidiana desde la fe y la esperanza.', precio: 0.00, unidades: 0 },
+            { titulo: 'Directorio sobre la Piedad Popular y la Liturgia', autor: 'Congregación para el Culto Divino',
+                reseña: 'Directorio para integrar la piedad popular con la liturgia.', precio: 0.00, unidades: 0 },
+            { titulo: 'Decreto sobre la Formación Sacerdotal (Optatam Totius)', autor: 'Mons. William A. Guerra',
+                reseña: 'Documento del Concilio Vaticano II sobre la formación sacerdotal.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'La Iglesia en América (Ecclesia in America)', autor: 'Juan Pablo II',
+                reseña: 'Exhortación apostólica sobre la Iglesia en América.', precio: 0.00, unidades: 0 },
+            { titulo: 'Decreto sobre el Apostolado de los Seglares (Apostolicam Actuositatem)',
+                autor: 'Mons. Baltazar E. Porras Cardozo',
+                reseña: 'Documento del Concilio Vaticano II sobre el apostolado de los laicos.', precio: 0.00,
+                unidades: 0 },
+            { titulo: 'Misionero en la Gran Sabana', autor: 'Fr. Mariano Gutiérrez Salazar, OFMCap.',
+                reseña: 'Experiencia pastoral entre los pueblos indígenas del sureste venezolano.', precio: 0.00,
+                unidades: 0 },
+            { titulo: 'Exhortación Apostólica Post-Sinodal Reconciliatio et Paenitentia', autor: 'Juan Pablo II',
+                reseña: 'Exhortación sobre la Reconciliación y la Penitencia.', precio: 0.00, unidades: 0 },
+            { titulo: 'Retazos', autor: 'Mario Briceño-Iragorry', reseña: 'Vida de Mario Briceño-Iragorry, intelectual venezolano.',
+                precio: 1.00, unidades: 0 },
+            { titulo: 'El Patronato, el Concordato, el Convenio con la Santa Sede', autor: '—',
+                reseña: 'Relaciones entre la Iglesia y el Estado en Venezuela.', precio: 0.00, unidades: 0 },
+            { titulo: 'Orientaciones educativas sobre el amor humano', autor: 'Sagrada Congregación para la Educación Católica',
+                reseña: 'Pautas de educación sexual.', precio: 0.00, unidades: 0 },
+            { titulo: 'Los institutos seculares', autor: '—', reseña: 'Documento informativo sobre los institutos seculares.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'Carta a los Obispos sobre la atención pastoral a las personas homosexuales',
+                autor: 'Congregación para la Doctrina de la Fe',
+                reseña: 'Orientaciones pastorales para la atención a personas homosexuales.', precio: 0.00,
+                unidades: 0 },
+            { titulo: 'Dimensión religiosa de la educación en la escuela católica', autor: '—',
+                reseña: 'Orientaciones para la reflexión y revisión en la escuela católica.', precio: 0.00,
+                unidades: 0 },
+            { titulo: 'Carta a las personas consagradas con ocasión del Año Mariano', autor: 'Juan Pablo II',
+                reseña: 'Carta del Santo Padre a las comunidades religiosas.', precio: 0.00, unidades: 0 },
+            { titulo: 'Christifideles Laici', autor: 'Juan Pablo II',
+                reseña: 'Exhortación apostólica sobre la vocación y misión de los laicos.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'Carta sobre algunos aspectos de la meditación cristiana', autor: 'Congregación para la Doctrina de la Fe',
+                reseña: 'Orientaciones sobre la meditación cristiana.', precio: 0.00, unidades: 0 },
+            { titulo: 'Carta apostólica sobre la ordenación sacerdotal', autor: 'Juan Pablo II',
+                reseña: 'Carta apostólica reservada solo a los hombres sobre la ordenación sacerdotal.', precio: 0.00,
+                unidades: 0 },
+            { titulo: 'Evangelium Vitae', autor: 'Juan Pablo II',
+                reseña: 'Encíclica sobre el valor y la inviolabilidad de la vida humana.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'Preparación al sacramento del matrimonio', autor: 'Pontificio Consejo para la Familia',
+                reseña: 'Orientaciones para la preparación al sacramento del matrimonio.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'Vademécum para los confesores sobre algunos temas de moral conyugal',
+                autor: 'Pontificio Consejo para la Familia',
+                reseña: 'Guía para confesores sobre temas de moral conyugal.', precio: 0.00, unidades: 0 },
+            { titulo: 'Instrucción sobre la colaboración de los fieles laicos en el sagrado ministerio de los sacerdotes',
+                autor: '—',
+                reseña: 'Instrucción sobre algunas cuestiones acerca de la colaboración de los fieles laicos.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'Apostolos Suos', autor: 'Juan Pablo II',
+                reseña: 'Carta apostólica sobre la naturaleza teológica y jurídica de las Conferencias Episcopales.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'La cuestión familiar', autor: '—', reseña: 'Reflexión sobre la cuestión familiar.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'Directorio sobre la piedad popular y la liturgia', autor: '—',
+                reseña: 'Directorio sobre la piedad popular y la liturgia.', precio: 0.00, unidades: 0 },
+            { titulo: 'Rosarium Virginis Mariae', autor: 'Juan Pablo II',
+                reseña: 'Carta apostólica sobre el Santo Rosario.', precio: 0.00, unidades: 0 },
+            { titulo: 'Christus Vivit', autor: 'Papa Francisco',
+                reseña: 'Exhortación apostólica post-sinodal a los jóvenes y al pueblo de Dios.', precio: 0.00,
+                unidades: 0 },
+            { titulo: 'Gaudete et Exsultate', autor: 'Papa Francisco',
+                reseña: 'Exhortación apostólica sobre la santidad en el mundo actual.', precio: 0.00, unidades: 0 },
+            { titulo: 'Misericordia et Misera', autor: 'Papa Francisco', reseña: 'Carta apostólica sobre la misericordia.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'Verbum Domini', autor: 'Benedicto XVI',
+                reseña: 'Exhortación apostólica post-sindodal sobre la Palabra de Dios.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'Dignitas Personae', autor: 'Congregación para la Doctrina de la Fe',
+                reseña: 'Instrucción sobre algunas cuestiones de bioética.', precio: 0.00, unidades: 0 },
+            { titulo: 'Deus Caritas Est', autor: 'Benedicto XVI', reseña: 'Encíclica sobre el amor cristiano.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'Carta de los derechos de la familia', autor: 'Santa Sede',
+                reseña: 'Carta presentada por la Santa Sede sobre la misión de la familia.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'VIDA DE: Beato Pedro Betancur', autor: 'Mons. Mariano Gutiérrez, OFM. Cap.',
+                reseña: 'Vida del Beato Pedro de San José Betancur, primer santo de Guatemala.', precio: 0.00,
+                unidades: 0 },
+            { titulo: 'capuchino, misionero del guácharo y apóstol de galicia', autor: '—',
+                reseña: 'Historia de un misionero capuchino en América.', precio: 0.00, unidades: 0 },
+            { titulo: 'Beatopedro Betancur', autor: 'Mons. Mariano Gutiérrez, OFM. Cap.',
+                reseña: 'Vida del Beato Pedro de San José Betancur.', precio: 0.00, unidades: 0 },
+            { titulo: 'LUISA M. POLEO', autor: '—', reseña: 'Vida y obra de Luisa M. Poleo.', precio: 0.00,
+            unidades: 0 },
+            { titulo: 'Nectario Andrade Labarca', autor: '—', reseña: 'Vida y obra de Nectario Andrade Labarca.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'RAFAEL MARIA BARALT', autor: '—', reseña: 'Vida de Rafael María Baralt, historiador venezolano.',
+                precio: 0.00, unidades: 0 },
+            { titulo: 'ALFREDO VISO CASADO', autor: '—', reseña: 'Obra de Alfredo Viso Casado.', precio: 0.00,
+                unidades: 0 }
+        ];
+
+        // ========================================================
+        // FUNCIONES DE LA APLICACIÓN
+        // ========================================================
+        const grid = document.getElementById('grid');
+
+        function generarPortadaSVG(titulo) {
+            const colores = ['#f0e6d3', '#d9cbb8', '#e8d5b7', '#f5e6cc', '#eaddc5', '#e3d6c0', '#f2e8d5'];
+            const colorFondo = colores[Math.floor(Math.random() * colores.length)];
+            const tituloCodificado = encodeURIComponent(titulo);
+            return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect width='200' height='300' fill='${colorFondo}'/%3E%3Ctext x='50%25' y='35%25' font-size='18' font-weight='bold' text-anchor='middle' dy='.3em' font-family='Georgia, serif' fill='%23333'%3E${tituloCodificado}%3C/text%3E%3Ctext x='50%25' y='55%25' font-size='10' text-anchor='middle' fill='%23666' font-family='Georgia, serif'%3ETR%C3%8DPODE%3C/text%3E%3C/svg%3E`;
+        }
+
+        function renderizarLibros(libros) {
+            if (!libros || libros.length === 0) {
+                grid.innerHTML =
+                    `<p style="grid-column:1/-1; text-align:center; font-size:18px; color:#999; padding:40px 0;">📭 No hay libros cargados.</p>`;
+                return;
+            }
+            let html = '';
+            libros.forEach(libro => {
+                const portada = libro.imagen || generarPortadaSVG(libro.titulo);
+                const esFavorito = favoritos.includes(libro.id);
+                const adminBtns = esAdmin ? `
+                        <button class="btn-editar" onclick="event.stopPropagation(); abrirModalEditar(${libro.id})">✏️</button>
+                        <button class="btn-eliminar" onclick="event.stopPropagation(); eliminarLibroHandler(${libro.id})">🗑️</button>
+                    ` : '';
+
+                html += `
+                        <div class="card-container" data-id="${libro.id}" onclick="toggleVolteo(${libro.id})">
+                            <div class="card-flip">
+                                <div class="card-front">
+                                    ${esFavorito ? '<div class="favorito-badge">❤️</div>' : ''}
+                                    <img src="${portada}" alt="${libro.titulo}" loading="lazy">
+                                    <div class="info">
+                                        <h3>${libro.titulo}</h3>
+                                        <div class="autor">${libro.autor}</div>
+                                        <div>
+                                            <span class="precio">$ ${Number(libro.precio).toFixed(2)}</span>
+                                            <span class="unidades"> | 📦 ${libro.unidades}</span>
+                                        </div>
+                                        <div class="card-actions" onclick="event.stopPropagation();">
+                                            <button class="btn-favorito ${esFavorito ? 'activo' : ''}" onclick="toggleFavorito(${libro.id})">
+                                                ${esFavorito ? '❤️' : '🤍'}
+                                            </button>
+                                            <button class="btn-carrito" onclick="agregarAlCarrito(${libro.id}, 1)">🛒</button>
+                                            ${adminBtns}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-actions" onclick="event.stopPropagation();">
-                                    <button class="btn-favorito ${esFavorito ? 'activo' : ''}" onclick="toggleFavorito(${libro.id})">
-                                        ${esFavorito ? '❤️' : '🤍'}
-                                    </button>
-                                    ${adminBtns}
+                                <div class="card-back">
+                                    <div class="back-titulo">${libro.titulo}</div>
+                                    <div class="back-reseña">${libro.reseña || 'Sin reseña disponible.'}</div>
+                                    <div class="back-autor">— ${libro.autor}</div>
+                                    <div class="back-precio">$ ${Number(libro.precio).toFixed(2)}</div>
+                                    <div style="margin-top:6px; font-size:11px; color:#aaa;">🔄 Haz clic para voltear</div>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-back">
-                            <div class="back-titulo">${libro.titulo}</div>
-                            <div class="back-reseña">${libro.reseña || 'Sin reseña disponible.'}</div>
-                            <div class="back-autor">— ${libro.autor}</div>
-                            <div class="back-precio">$ ${Number(libro.precio).toFixed(2)}</div>
-                            <div style="margin-top:6px; font-size:11px; color:#aaa;">🔄 Haz clic para voltear</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        grid.innerHTML = html;
-        document.getElementById('contadorLibrosSidebar').textContent = libros.length;
-        document.getElementById('contadorFavHeader').textContent = favoritos.length;
-    }
-
-    function toggleVolteo(id) {
-        const container = document.querySelector(`.card-container[data-id="${id}"]`);
-        if (container) {
-            container.classList.toggle('flipped');
-        }
-    }
-
-    function toggleFavorito(id) {
-        const index = favoritos.indexOf(id);
-        if (index > -1) {
-            favoritos.splice(index, 1);
-        } else {
-            favoritos.push(id);
-        }
-        localStorage.setItem('favoritos', JSON.stringify(favoritos));
-        actualizarSidebarFav();
-        cargarYRenderizar();
-    }
-
-    function toggleSidebarFav() {
-        const sidebar = document.getElementById('sidebarFav');
-        if (sidebar.style.display === 'none' || sidebar.style.display === '') {
-            sidebar.style.display = 'block';
-            actualizarSidebarFav();
-        } else {
-            sidebar.style.display = 'none';
-        }
-    }
-
-    function actualizarSidebarFav() {
-        const container = document.getElementById('listaFavoritos');
-        if (favoritos.length === 0) {
-            container.innerHTML = '<p style="color:#999;">No tienes libros favoritos.</p>';
-            return;
-        }
-        obtenerTodosLosLibros().then(libros => {
-            const favLibros = libros.filter(l => favoritos.includes(l.id));
-            let html = '';
-            favLibros.forEach(libro => {
-                html += `
-                    <div class="fav-item">
-                        <div class="fav-info">
-                            <strong>${libro.titulo}</strong>
-                            <span>$${Number(libro.precio).toFixed(2)}</span>
-                        </div>
-                        <button onclick="toggleFavorito(${libro.id})">🗑️</button>
-                    </div>
-                `;
+                    `;
             });
-            container.innerHTML = html;
-        });
-        document.getElementById('contadorFavHeader').textContent = favoritos.length;
-    }
-
-    function iniciarSesion() {
-        const usuario = document.getElementById('loginUsuario').value.trim();
-        const clave = document.getElementById('loginClave').value;
-        const errorEl = document.getElementById('loginError');
-
-        if (usuario === USUARIO_ADMIN && clave === CLAVE_ADMIN) {
-            usuarioActual = usuario;
-            esAdmin = true;
-            errorEl.textContent = '';
-            mostrarContenidoPrincipal();
-        } else if (usuario === 'visitante') {
-            usuarioActual = 'visitante';
-            esAdmin = false;
-            errorEl.textContent = '';
-            mostrarContenidoPrincipal();
-        } else {
-            errorEl.textContent = '❌ Usuario o clave incorrectos.';
+            grid.innerHTML = html;
+            document.getElementById('contadorLibrosSidebar').textContent = libros.length;
+            document.getElementById('contadorFavHeader').textContent = favoritos.length;
+            document.getElementById('contadorCarritoHeader').textContent = carrito.length;
         }
-    }
 
-    function mostrarContenidoPrincipal() {
-        document.getElementById('loginBox').style.display = 'none';
-        document.getElementById('mainLayout').classList.add('active');
-        document.getElementById('usuarioSidebar').textContent = usuarioActual;
-        if (!esAdmin) {
-            document.getElementById('menuAdmin').style.display = 'none';
-        } else {
-            document.getElementById('menuAdmin').style.display = 'flex';
+        function toggleVolteo(id) {
+            const container = document.querySelector(`.card-container[data-id="${id}"]`);
+            if (container) {
+                container.classList.toggle('flipped');
+            }
         }
-        cambiarPanel('panelLibros');
-        cargarYRenderizar();
-    }
 
-    function cerrarSesion() {
-        usuarioActual = null;
-        esAdmin = false;
-        document.getElementById('mainLayout').classList.remove('active');
-        document.getElementById('loginBox').style.display = 'block';
-        document.getElementById('loginError').textContent = '';
-        document.getElementById('sidebarFav').style.display = 'none';
-    }
-
-    function cambiarPanel(panelId) {
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        document.getElementById(panelId).classList.add('active');
-        document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-        document.querySelector(`.menu-item[data-panel="${panelId}"]`)?.classList.add('active');
-        panelActual = panelId;
-        if (panelId === 'panelLibros') {
+        // ========================================================
+        // FUNCIONES DE FAVORITOS
+        // ========================================================
+        function toggleFavorito(id) {
+            const index = favoritos.indexOf(id);
+            if (index > -1) {
+                favoritos.splice(index, 1);
+            } else {
+                favoritos.push(id);
+            }
+            localStorage.setItem('favoritos', JSON.stringify(favoritos));
+            actualizarSidebarFav();
             cargarYRenderizar();
         }
-    }
 
-    const form = document.getElementById('formLibro');
-    const mensajeAdmin = document.getElementById('mensajeAdmin');
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!esAdmin) return;
-
-        const editId = document.getElementById('editId').value;
-        const titulo = document.getElementById('titulo').value.trim();
-        const autor = document.getElementById('autor').value.trim();
-        const reseña = document.getElementById('reseña').value.trim();
-        const precio = parseFloat(document.getElementById('precio').value);
-        const unidades = parseInt(document.getElementById('unidades').value);
-        const imagenFile = document.getElementById('imagen').files[0];
-
-        let imagen = '';
-        if (imagenFile) {
-            try {
-                imagen = await convertirImagenABase64(imagenFile);
-            } catch (error) {
-                mensajeAdmin.textContent = '❌ Error al procesar la imagen.';
-                return;
-            }
-        }
-
-        const libro = { titulo, autor, reseña, precio, unidades, imagen };
-
-        try {
-            if (editId) {
-                await actualizarLibro(parseInt(editId), libro);
-                mensajeAdmin.textContent = '✅ Libro actualizado correctamente.';
-                cancelarEdicion();
+        function toggleSidebarFav() {
+            const sidebar = document.getElementById('sidebarFav');
+            if (sidebar.style.display === 'none' || sidebar.style.display === '') {
+                sidebar.style.display = 'block';
+                actualizarSidebarFav();
             } else {
-                await agregarLibro(libro);
-                mensajeAdmin.textContent = '✅ Libro agregado correctamente.';
-                form.reset();
+                sidebar.style.display = 'none';
             }
-            await cargarYRenderizar();
-        } catch (error) {
-            console.error('Error al guardar:', error);
-            mensajeAdmin.textContent = '❌ Error al guardar el libro.';
         }
-    });
 
-    function cancelarEdicion() {
-        document.getElementById('editId').value = '';
-        form.reset();
-        mensajeAdmin.textContent = '';
-        document.getElementById('titulo').focus();
-    }
-
-    let libroEditando = null;
-
-    async function abrirModalEditar(id) {
-        if (!esAdmin) return;
-        const libros = await obtenerTodosLosLibros();
-        const libro = libros.find(l => l.id === id);
-        if (!libro) return;
-
-        libroEditando = libro;
-        document.getElementById('modalEditId').value = libro.id;
-        document.getElementById('modalTitulo').value = libro.titulo;
-        document.getElementById('modalAutor').value = libro.autor;
-        document.getElementById('modalReseña').value = libro.reseña;
-        document.getElementById('modalPrecio').value = libro.precio;
-        document.getElementById('modalUnidades').value = libro.unidades;
-        document.getElementById('modalImagen').value = '';
-        document.getElementById('modalEditar').classList.add('active');
-    }
-
-    function cerrarModal() {
-        document.getElementById('modalEditar').classList.remove('active');
-        libroEditando = null;
-    }
-
-    async function guardarEdicionModal() {
-        if (!esAdmin) return;
-        const id = parseInt(document.getElementById('modalEditId').value);
-        const titulo = document.getElementById('modalTitulo').value.trim();
-        const autor = document.getElementById('modalAutor').value.trim();
-        const reseña = document.getElementById('modalReseña').value.trim();
-        const precio = parseFloat(document.getElementById('modalPrecio').value);
-        const unidades = parseInt(document.getElementById('modalUnidades').value);
-        const imagenFile = document.getElementById('modalImagen').files[0];
-
-        let imagen = libroEditando.imagen || '';
-        if (imagenFile) {
-            try {
-                imagen = await convertirImagenABase64(imagenFile);
-            } catch (error) {
-                alert('❌ Error al procesar la imagen.');
+        function actualizarSidebarFav() {
+            const container = document.getElementById('listaFavoritos');
+            if (favoritos.length === 0) {
+                container.innerHTML = '<p style="color:#999;">No tienes libros favoritos.</p>';
                 return;
             }
+            obtenerTodosLosLibros().then(libros => {
+                const favLibros = libros.filter(l => favoritos.includes(l.id));
+                let html = '';
+                favLibros.forEach(libro => {
+                    html += `
+                            <div class="fav-item">
+                                <div class="fav-info">
+                                    <strong>${libro.titulo}</strong>
+                                    <span>$${Number(libro.precio).toFixed(2)}</span>
+                                </div>
+                                <button onclick="toggleFavorito(${libro.id})">🗑️</button>
+                            </div>
+                        `;
+                });
+                container.innerHTML = html;
+            });
+            document.getElementById('contadorFavHeader').textContent = favoritos.length;
         }
 
-        const libro = { titulo, autor, reseña, precio, unidades, imagen };
+        // ========================================================
+        // EXPORTAR FAVORITOS A PDF
+        // ========================================================
+        function exportarFavoritosPDF() {
+            obtenerTodosLosLibros().then(libros => {
+                const favLibros = libros.filter(l => favoritos.includes(l.id));
+                if (favLibros.length === 0) {
+                    alert('No tienes libros en tu lista de favoritos.');
+                    return;
+                }
 
-        try {
-            await actualizarLibro(id, libro);
-            cerrarModal();
-            await cargarYRenderizar();
-            alert('✅ Libro actualizado correctamente.');
-        } catch (error) {
-            console.error('Error al actualizar:', error);
-            alert('❌ Error al actualizar el libro.');
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const margin = 15;
+                let y = 20;
+
+                // Título
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('📚 Reporte de Libros Favoritos', pageWidth / 2, y, { align: 'center' });
+                y += 10;
+
+                // Fecha
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Generado el: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, pageWidth / 2,
+                    y, { align: 'center' });
+                y += 10;
+
+                // Línea separadora
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 8;
+
+                // Lista de libros
+                doc.setFontSize(11);
+                favLibros.forEach((libro, index) => {
+                    if (y > 260) {
+                        doc.addPage();
+                        y = 20;
+                    }
+
+                    const precio = Number(libro.precio).toFixed(2);
+                    const texto = `${index + 1}. ${libro.titulo} — ${libro.autor} ($${precio})`;
+                    const lines = doc.splitTextToSize(texto, pageWidth - margin * 2);
+                    doc.text(lines, margin, y);
+                    y += lines.length * 6 + 4;
+                });
+
+                // Pie de página
+                y += 4;
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 6;
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'italic');
+                doc.text(`Total de favoritos: ${favLibros.length} libros`, margin, y);
+
+                doc.save(`favoritos_${new Date().toISOString().slice(0, 10)}.pdf`);
+            });
         }
-    }
 
-    async function eliminarLibroHandler(id) {
-        if (!esAdmin) return;
-        if (!confirm('¿Seguro que deseas eliminar este libro?')) return;
-        try {
-            await eliminarLibro(id);
-            const idx = favoritos.indexOf(id);
-            if (idx > -1) {
-                favoritos.splice(idx, 1);
-                localStorage.setItem('favoritos', JSON.stringify(favoritos));
+        // ========================================================
+        // FUNCIONES DEL CARRITO
+        // ========================================================
+        function toggleSidebarCarrito() {
+            const sidebar = document.getElementById('sidebarCarrito');
+            if (sidebar.style.display === 'none' || sidebar.style.display === '') {
+                sidebar.style.display = 'block';
+                actualizarSidebarCarrito();
+            } else {
+                sidebar.style.display = 'none';
             }
-            await cargarYRenderizar();
-        } catch (error) {
-            console.error('Error al eliminar:', error);
-            alert('❌ Error al eliminar el libro.');
         }
-    }
 
-    const searchInput = document.getElementById('searchInput');
-
-    async function buscarLibros() {
-        const filtro = searchInput.value.trim().toLowerCase();
-        const libros = await obtenerTodosLosLibros();
-        if (!filtro) {
-            renderizarLibros(libros);
-            return;
-        }
-        const filtrados = libros.filter(libro =>
-            libro.titulo.toLowerCase().includes(filtro) ||
-            libro.autor.toLowerCase().includes(filtro) ||
-            libro.reseña.toLowerCase().includes(filtro)
-        );
-        renderizarLibros(filtrados);
-    }
-
-    async function mostrarTodos() {
-        searchInput.value = '';
-        const libros = await obtenerTodosLosLibros();
-        renderizarLibros(libros);
-    }
-
-    async function cargarYRenderizar() {
-        const libros = await obtenerTodosLosLibros();
-        renderizarLibros(libros);
-        actualizarSidebarFav();
-        document.getElementById('contadorFavHeader').textContent = favoritos.length;
-    }
-
-    async function exportarJSON() {
-        try {
-            const libros = await obtenerTodosLosLibros();
-            const data = {
-                fecha: new Date().toISOString(),
-                libros: libros,
-                favoritos: favoritos,
-                version: '1.0'
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `tripode_backup_${new Date().toISOString().slice(0,10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            alert('✅ Respaldo exportado correctamente.');
-        } catch (error) {
-            console.error('Error al exportar:', error);
-            alert('❌ Error al exportar los datos.');
-        }
-    }
-
-    async function importarJSON(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        try {
-            const text = await file.text();
-            const data = JSON.parse(text);
-            if (!data.libros || !Array.isArray(data.libros)) {
-                throw new Error('El archivo no tiene un formato válido.');
-            }
-            if (!confirm(`¿Importar ${data.libros.length} libros? Se reemplazarán todos los datos actuales.`)) return;
-
-            await limpiarBaseDeDatos();
-
-            for (const libro of data.libros) {
-                const { id, ...libroSinId } = libro;
-                await agregarLibro(libroSinId);
-            }
-
-            if (data.favoritos) {
-                favoritos = data.favoritos;
-                localStorage.setItem('favoritos', JSON.stringify(favoritos));
+        function actualizarSidebarCarrito() {
+            const container = document.getElementById('listaCarrito');
+            const totalSpan = document.getElementById('totalCarrito');
+            if (carrito.length === 0) {
+                container.innerHTML = '<p style="color:#999;">No hay libros en el carrito.</p>';
+                totalSpan.textContent = '$ 0.00';
+                document.getElementById('contadorCarritoHeader').textContent = '0';
+                return;
             }
 
-            await cargarYRenderizar();
-            alert('✅ Datos importados correctamente.');
-            event.target.value = '';
+            obtenerTodosLosLibros().then(libros => {
+                let html = '';
+                let total = 0;
+                carrito.forEach(item => {
+                    const libro = libros.find(l => l.id === item.id);
+                    if (libro) {
+                        const subtotal = libro.precio * item.cantidad;
+                        total += subtotal;
+                        html += `
+                                <div class="fav-item">
+                                    <div class="fav-info">
+                                        <strong>${libro.titulo}</strong>
+                                        <span>$${Number(libro.precio).toFixed(2)} x ${item.cantidad} = $${subtotal.toFixed(2)}</span>
+                                    </div>
+                                    <div>
+                                        <button class="btn-cantidad" onclick="cambiarCantidadCarrito(${libro.id}, -1)">−</button>
+                                        <span style="margin:0 4px;">${item.cantidad}</span>
+                                        <button class="btn-cantidad-mas" onclick="cambiarCantidadCarrito(${libro.id}, 1)">+</button>
+                                        <button onclick="eliminarDelCarrito(${libro.id})" style="background:#d32f2f;">🗑️</button>
+                                    </div>
+                                </div>
+                            `;
+                    }
+                });
+                container.innerHTML = html;
+                totalSpan.textContent = `$ ${total.toFixed(2)}`;
+                document.getElementById('contadorCarritoHeader').textContent = carrito.length;
+            });
+        }
+
+        function agregarAlCarrito(id, cantidad = 1) {
+            const itemExistente = carrito.find(item => item.id === id);
+            if (itemExistente) {
+                itemExistente.cantidad += cantidad;
+            } else {
+                carrito.push({ id, cantidad });
+            }
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            actualizarSidebarCarrito();
+            cargarYRenderizar();
+        }
+
+        function cambiarCantidadCarrito(id, delta) {
+            const item = carrito.find(item => item.id === id);
+            if (item) {
+                item.cantidad += delta;
+                if (item.cantidad <= 0) {
+                    eliminarDelCarrito(id);
+                } else {
+                    localStorage.setItem('carrito', JSON.stringify(carrito));
+                    actualizarSidebarCarrito();
+                }
+            }
+        }
+
+        function eliminarDelCarrito(id) {
+            carrito = carrito.filter(item => item.id !== id);
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            actualizarSidebarCarrito();
+            cargarYRenderizar();
+        }
+
+        function vaciarCarrito() {
+            if (confirm('¿Seguro que deseas vaciar el carrito?')) {
+                carrito = [];
+                localStorage.setItem('carrito', JSON.stringify(carrito));
+                actualizarSidebarCarrito();
+                cargarYRenderizar();
+            }
+        }
+
+        // ========================================================
+        // EXPORTAR CARRITO A PDF
+        // ========================================================
+        function exportarCarritoPDF() {
+            if (carrito.length === 0) {
+                alert('El carrito está vacío.');
+                return;
+            }
+
+            obtenerTodosLosLibros().then(libros => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const margin = 15;
+                let y = 20;
+                let totalGeneral = 0;
+
+                // Título
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('🧾 Reporte de Carrito de Compras', pageWidth / 2, y, { align: 'center' });
+                y += 10;
+
+                // Fecha
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Generado el: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, pageWidth / 2,
+                    y, { align: 'center' });
+                y += 10;
+
+                // Línea separadora
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 8;
+
+                // Encabezados de tabla
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                const col1 = margin;
+                const col2 = 85;
+                const col3 = 135;
+                const col4 = 170;
+                const col5 = 190;
+
+                doc.text('Título', col1, y);
+                doc.text('Autor', col2, y);
+                doc.text('Precio', col3, y);
+                doc.text('Cant.', col4, y);
+                doc.text('Subtotal', col5, y);
+
+                y += 2;
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 6;
+
+                // Datos de la tabla
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'normal');
+
+                carrito.forEach((item, index) => {
+                    const libro = libros.find(l => l.id === item.id);
+                    if (!libro) return;
+
+                    if (y > 250) {
+                        doc.addPage();
+                        y = 20;
+                        doc.setFontSize(10);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Título', col1, y);
+                        doc.text('Autor', col2, y);
+                        doc.text('Precio', col3, y);
+                        doc.text('Cant.', col4, y);
+                        doc.text('Subtotal', col5, y);
+                        y += 2;
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(margin, y, pageWidth - margin, y);
+                        y += 6;
+                        doc.setFontSize(9);
+                        doc.setFont('helvetica', 'normal');
+                    }
+
+                    const subtotal = libro.precio * item.cantidad;
+                    totalGeneral += subtotal;
+
+                    let titulo = libro.titulo;
+                    if (titulo.length > 30) titulo = titulo.substring(0, 28) + '…';
+
+                    let autor = libro.autor;
+                    if (autor.length > 20) autor = autor.substring(0, 18) + '…';
+
+                    doc.text(titulo, col1, y);
+                    doc.text(autor, col2, y);
+                    doc.text(`$${Number(libro.precio).toFixed(2)}`, col3, y);
+                    doc.text(`${item.cantidad}`, col4, y);
+                    doc.text(`$${subtotal.toFixed(2)}`, col5, y);
+                    y += 6;
+                });
+
+                // Línea final y total
+                y += 2;
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += 6;
+
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`TOTAL: $ ${totalGeneral.toFixed(2)}`, pageWidth - margin, y, { align: 'right' });
+
+                // Pie de página
+                y += 8;
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'italic');
+                doc.text(`Total de items: ${carrito.length} productos`, margin, y);
+
+                doc.save(`carrito_${new Date().toISOString().slice(0, 10)}.pdf`);
+            });
+        }
+
+        // ========================================================
+        // FUNCIONES DE AUTENTICACIÓN Y NAVEGACIÓN
+        // ========================================================
+        function iniciarSesion() {
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const clave = document.getElementById('loginClave').value;
+            const errorEl = document.getElementById('loginError');
+
+            if (usuario === USUARIO_ADMIN && clave === CLAVE_ADMIN) {
+                usuarioActual = usuario;
+                esAdmin = true;
+                errorEl.textContent = '';
+                mostrarContenidoPrincipal();
+            } else if (usuario === 'visitante') {
+                usuarioActual = 'visitante';
+                esAdmin = false;
+                errorEl.textContent = '';
+                mostrarContenidoPrincipal();
+            } else {
+                errorEl.textContent = '❌ Usuario o clave incorrectos.';
+            }
+        }
+
+        function mostrarContenidoPrincipal() {
+            document.getElementById('loginBox').style.display = 'none';
+            document.getElementById('mainLayout').classList.add('active');
+            document.getElementById('usuarioSidebar').textContent = usuarioActual;
+            if (!esAdmin) {
+                document.getElementById('menuAdmin').style.display = 'none';
+            } else {
+                document.getElementById('menuAdmin').style.display = 'flex';
+            }
             cambiarPanel('panelLibros');
-        } catch (error) {
-            console.error('Error al importar:', error);
-            alert('❌ Error al importar el archivo. Verifica que sea un JSON válido.');
+            cargarYRenderizar();
         }
-    }
 
-    async function initApp() {
-        try {
-            await abrirBaseDeDatos();
-            const libros = await obtenerTodosLosLibros();
-            if (libros.length === 0) {
-                for (const libro of librosCatalogoCompleto) {
+        function cerrarSesion() {
+            usuarioActual = null;
+            esAdmin = false;
+            document.getElementById('mainLayout').classList.remove('active');
+            document.getElementById('loginBox').style.display = 'block';
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('sidebarFav').style.display = 'none';
+            document.getElementById('sidebarCarrito').style.display = 'none';
+        }
+
+        function cambiarPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(panelId).classList.add('active');
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            document.querySelector(`.menu-item[data-panel="${panelId}"]`)?.classList.add('active');
+            panelActual = panelId;
+            if (panelId === 'panelLibros') {
+                cargarYRenderizar();
+            }
+        }
+
+        // ========================================================
+        // FUNCIONES DE ADMINISTRACIÓN
+        // ========================================================
+        const form = document.getElementById('formLibro');
+        const mensajeAdmin = document.getElementById('mensajeAdmin');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!esAdmin) return;
+
+            const editId = document.getElementById('editId').value;
+            const titulo = document.getElementById('titulo').value.trim();
+            const autor = document.getElementById('autor').value.trim();
+            const reseña = document.getElementById('reseña').value.trim();
+            const precio = parseFloat(document.getElementById('precio').value);
+            const unidades = parseInt(document.getElementById('unidades').value);
+            const imagenFile = document.getElementById('imagen').files[0];
+
+            let imagen = '';
+            if (imagenFile) {
+                try {
+                    imagen = await convertirImagenABase64(imagenFile);
+                } catch (error) {
+                    mensajeAdmin.textContent = '❌ Error al procesar la imagen.';
+                    return;
+                }
+            }
+
+            const libro = { titulo, autor, reseña, precio, unidades, imagen };
+
+            try {
+                if (editId) {
+                    await actualizarLibro(parseInt(editId), libro);
+                    mensajeAdmin.textContent = '✅ Libro actualizado correctamente.';
+                    cancelarEdicion();
+                } else {
                     await agregarLibro(libro);
+                    mensajeAdmin.textContent = '✅ Libro agregado correctamente.';
+                    form.reset();
                 }
                 await cargarYRenderizar();
-                console.log(`✅ Cargados ${librosCatalogoCompleto.length} libros de los archivos PDF.`);
+            } catch (error) {
+                console.error('Error al guardar:', error);
+                mensajeAdmin.textContent = '❌ Error al guardar el libro.';
             }
-            console.log('✅ Aplicación inicializada correctamente.');
-        } catch (error) {
-            console.error('❌ Error al inicializar:', error);
+        });
+
+        function cancelarEdicion() {
+            document.getElementById('editId').value = '';
+            form.reset();
+            mensajeAdmin.textContent = '';
+            document.getElementById('titulo').focus();
         }
-    }
 
-    document.getElementById('loginClave').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') iniciarSesion();
-    });
-    document.getElementById('loginUsuario').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') iniciarSesion();
-    });
-    searchInput.addEventListener('input', buscarLibros);
+        let libroEditando = null;
 
-    window.iniciarSesion = iniciarSesion;
-    window.cerrarSesion = cerrarSesion;
-    window.cambiarPanel = cambiarPanel;
-    window.abrirModalEditar = abrirModalEditar;
-    window.cerrarModal = cerrarModal;
-    window.guardarEdicionModal = guardarEdicionModal;
-    window.eliminarLibroHandler = eliminarLibroHandler;
-    window.mostrarTodos = mostrarTodos;
-    window.cancelarEdicion = cancelarEdicion;
-    window.toggleFavorito = toggleFavorito;
-    window.toggleSidebarFav = toggleSidebarFav;
-    window.exportarJSON = exportarJSON;
-    window.importarJSON = importarJSON;
-    window.toggleVolteo = toggleVolteo;
+        async function abrirModalEditar(id) {
+            if (!esAdmin) return;
+            const libros = await obtenerTodosLosLibros();
+            const libro = libros.find(l => l.id === id);
+            if (!libro) return;
 
-    initApp();
-</script>
+            libroEditando = libro;
+            document.getElementById('modalEditId').value = libro.id;
+            document.getElementById('modalTitulo').value = libro.titulo;
+            document.getElementById('modalAutor').value = libro.autor;
+            document.getElementById('modalReseña').value = libro.reseña;
+            document.getElementById('modalPrecio').value = libro.precio;
+            document.getElementById('modalUnidades').value = libro.unidades;
+            document.getElementById('modalImagen').value = '';
+            document.getElementById('modalEditar').classList.add('active');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalEditar').classList.remove('active');
+            libroEditando = null;
+        }
+
+        async function guardarEdicionModal() {
+            if (!esAdmin) return;
+            const id = parseInt(document.getElementById('modalEditId').value);
+            const titulo = document.getElementById('modalTitulo').value.trim();
+            const autor = document.getElementById('modalAutor').value.trim();
+            const reseña = document.getElementById('modalReseña').value.trim();
+            const precio = parseFloat(document.getElementById('modalPrecio').value);
+            const unidades = parseInt(document.getElementById('modalUnidades').value);
+            const imagenFile = document.getElementById('modalImagen').files[0];
+
+            let imagen = libroEditando.imagen || '';
+            if (imagenFile) {
+                try {
+                    imagen = await convertirImagenABase64(imagenFile);
+                } catch (error) {
+                    alert('❌ Error al procesar la imagen.');
+                    return;
+                }
+            }
+
+            const libro = { titulo, autor, reseña, precio, unidades, imagen };
+
+            try {
+                await actualizarLibro(id, libro);
+                cerrarModal();
+                await cargarYRenderizar();
+                alert('✅ Libro actualizado correctamente.');
+            } catch (error) {
+                console.error('Error al actualizar:', error);
+                alert('❌ Error al actualizar el libro.');
+            }
+        }
+
+        async function eliminarLibroHandler(id) {
+            if (!esAdmin) return;
+            if (!confirm('¿Seguro que deseas eliminar este libro?')) return;
+            try {
+                await eliminarLibro(id);
+                const idx = favoritos.indexOf(id);
+                if (idx > -1) {
+                    favoritos.splice(idx, 1);
+                    localStorage.setItem('favoritos', JSON.stringify(favoritos));
+                }
+                const carritoIdx = carrito.findIndex(item => item.id === id);
+                if (carritoIdx > -1) {
+                    carrito.splice(carritoIdx, 1);
+                    localStorage.setItem('carrito', JSON.stringify(carrito));
+                }
+                await cargarYRenderizar();
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+                alert('❌ Error al eliminar el libro.');
+            }
+        }
+
+        // ========================================================
+        // FUNCIONES DE BÚSQUEDA Y RENDERIZADO
+        // ========================================================
+        const searchInput = document.getElementById('searchInput');
+
+        async function buscarLibros() {
+            const filtro = searchInput.value.trim().toLowerCase();
+            const libros = await obtenerTodosLosLibros();
+            if (!filtro) {
+                renderizarLibros(libros);
+                return;
+            }
+            const filtrados = libros.filter(libro =>
+                libro.titulo.toLowerCase().includes(filtro) ||
+                libro.autor.toLowerCase().includes(filtro) ||
+                libro.reseña.toLowerCase().includes(filtro)
+            );
+            renderizarLibros(filtrados);
+        }
+
+        async function mostrarTodos() {
+            searchInput.value = '';
+            const libros = await obtenerTodosLosLibros();
+            renderizarLibros(libros);
+        }
+
+        async function cargarYRenderizar() {
+            const libros = await obtenerTodosLosLibros();
+            renderizarLibros(libros);
+            actualizarSidebarFav();
+            actualizarSidebarCarrito();
+            document.getElementById('contadorFavHeader').textContent = favoritos.length;
+            document.getElementById('contadorCarritoHeader').textContent = carrito.length;
+        }
+
+        // ========================================================
+        // FUNCIONES DE BACKUP
+        // ========================================================
+        async function exportarJSON() {
+            try {
+                const libros = await obtenerTodosLosLibros();
+                const data = {
+                    fecha: new Date().toISOString(),
+                    libros: libros,
+                    favoritos: favoritos,
+                    carrito: carrito,
+                    version: '1.0'
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `tripode_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('✅ Respaldo exportado correctamente.');
+            } catch (error) {
+                console.error('Error al exportar:', error);
+                alert('❌ Error al exportar los datos.');
+            }
+        }
+
+        async function importarJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                if (!data.libros || !Array.isArray(data.libros)) {
+                    throw new Error('El archivo no tiene un formato válido.');
+                }
+                if (!confirm(`¿Importar ${data.libros.length} libros? Se reemplazarán todos los datos actuales.`)) return;
+
+                await limpiarBaseDeDatos();
+
+                for (const libro of data.libros) {
+                    const { id, ...libroSinId } = libro;
+                    await agregarLibro(libroSinId);
+                }
+
+                if (data.favoritos) {
+                    favoritos = data.favoritos;
+                    localStorage.setItem('favoritos', JSON.stringify(favoritos));
+                }
+
+                if (data.carrito) {
+                    carrito = data.carrito;
+                    localStorage.setItem('carrito', JSON.stringify(carrito));
+                }
+
+                await cargarYRenderizar();
+                alert('✅ Datos importados correctamente.');
+                event.target.value = '';
+                cambiarPanel('panelLibros');
+            } catch (error) {
+                console.error('Error al importar:', error);
+                alert('❌ Error al importar el archivo. Verifica que sea un JSON válido.');
+            }
+        }
+
+        // ========================================================
+        // INICIALIZACIÓN
+        // ========================================================
+        async function initApp() {
+            try {
+                await abrirBaseDeDatos();
+                const libros = await obtenerTodosLosLibros();
+                if (libros.length === 0) {
+                    for (const libro of librosCatalogoCompleto) {
+                        await agregarLibro(libro);
+                    }
+                    await cargarYRenderizar();
+                    console.log(`✅ Cargados ${librosCatalogoCompleto.length} libros de los archivos PDF.`);
+                }
+                console.log('✅ Aplicación inicializada correctamente.');
+            } catch (error) {
+                console.error('❌ Error al inicializar:', error);
+            }
+        }
+
+        // ========================================================
+        // EVENT LISTENERS
+        // ========================================================
+        document.getElementById('loginClave').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') iniciarSesion();
+        });
+        document.getElementById('loginUsuario').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') iniciarSesion();
+        });
+        searchInput.addEventListener('input', buscarLibros);
+
+        // ========================================================
+        // EXPOSICIÓN DE FUNCIONES AL SCOPE GLOBAL
+        // ========================================================
+        window.iniciarSesion = iniciarSesion;
+        window.cerrarSesion = cerrarSesion;
+        window.cambiarPanel = cambiarPanel;
+        window.abrirModalEditar = abrirModalEditar;
+        window.cerrarModal = cerrarModal;
+        window.guardarEdicionModal = guardarEdicionModal;
+        window.eliminarLibroHandler = eliminarLibroHandler;
+        window.mostrarTodos = mostrarTodos;
+        window.cancelarEdicion = cancelarEdicion;
+        window.toggleFavorito = toggleFavorito;
+        window.toggleSidebarFav = toggleSidebarFav;
+        window.exportarFavoritosPDF = exportarFavoritosPDF;
+        window.agregarAlCarrito = agregarAlCarrito;
+        window.cambiarCantidadCarrito = cambiarCantidadCarrito;
+        window.eliminarDelCarrito = eliminarDelCarrito;
+        window.vaciarCarrito = vaciarCarrito;
+        window.exportarCarritoPDF = exportarCarritoPDF;
+        window.toggleSidebarCarrito = toggleSidebarCarrito;
+        window.exportarJSON = exportarJSON;
+        window.importarJSON = importarJSON;
+        window.toggleVolteo = toggleVolteo;
+
+        initApp();
+    </script>
 </body>
 </html>
